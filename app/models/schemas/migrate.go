@@ -9,6 +9,13 @@ var MigratingTables = []any{
 	&UserSetting{},
 
 	&UsersToBillingPlans{},
+	&Company{},
+	&UsersToCompanies{},
+	&CompanySettings{},
+	&ShiftRequirement{},
+	&AvailabilitySlot{},
+	&ShiftAssignment{},
+	&SwapRequest{},
 
 	// private tables
 	&PlanLimitation{},

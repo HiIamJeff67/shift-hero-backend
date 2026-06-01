@@ -32,9 +32,17 @@ func RegisterEnumsValidation(validate *validator.Validate) {
 		val := fl.Field().String()
 		return util.IsStringIn(val, enums.AllCountryStrings)
 	})
+	validate.RegisterValidation("isemployeerole", func(fl validator.FieldLevel) bool {
+		val := fl.Field().String()
+		return util.IsStringIn(val, enums.AllEmployeeRoleStrings)
+	})
 	validate.RegisterValidation("islanguage", func(fl validator.FieldLevel) bool {
 		val := fl.Field().String()
 		return util.IsStringIn(val, enums.AllLanguageStrings)
+	})
+	validate.RegisterValidation("isswaprequeststatus", func(fl validator.FieldLevel) bool {
+		val := fl.Field().String()
+		return util.IsStringIn(val, enums.AllSwapRequestStatusStrings)
 	})
 	validate.RegisterValidation("issupportedcurrencycode", func(fl validator.FieldLevel) bool {
 		val := fl.Field().String()

@@ -10,6 +10,8 @@ var (
 	officialName = strings.TrimSpace(util.GetEnv("APP_OFFICIAL_NAME", "Backend Starter"))
 	officialMail = strings.TrimSpace(util.GetEnv("APP_OFFICIAL_GMAIL", "noreply@example.com"))
 	officialPass = util.GetEnv("APP_OFFICIAL_GOOGLE_APPLICATION_PASSWORD", "")
+	smtpUsername = strings.TrimSpace(util.GetEnv("SMTP_USERNAME", officialMail))
+	smtpPassword = util.GetEnv("SMTP_PASSWORD", officialPass)
 
 	officialWebsiteURL         = strings.TrimSuffix(strings.TrimSpace(util.GetEnv("APP_OFFICIAL_WEBSITE_URL", "http://localhost:7777")), "/")
 	officialHelpURL            = strings.TrimSpace(util.GetEnv("APP_OFFICIAL_HELP_URL", officialWebsiteURL+"/help"))

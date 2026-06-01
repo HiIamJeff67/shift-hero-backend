@@ -1,0 +1,739 @@
+openapi: 3.0.3
+info:
+  title: ShiftHero Backend API
+  version: 1.0.0
+  description: REST contract for Company + Scheduling core flow.
+servers:
+  - url: /api/development/v1
+security:
+  - bearerAuth: []
+paths:
+  /companies:
+    post:
+      summary: Create company
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCompanyBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/CompanyEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+    patch:
+      summary: Update company (non-GET uses request body)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCompanyBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/UpdatedAtEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/me:
+    get:
+      summary: Get my companies
+      responses:
+        '200':
+          $ref: '#/components/responses/CompanyListEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/{companyId}:
+    get:
+      summary: Get one company
+      parameters:
+        - $ref: '#/components/parameters/companyId'
+      responses:
+        '200':
+          $ref: '#/components/responses/CompanyEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/{companyId}/members:
+    get:
+      summary: Get company members
+      parameters:
+        - $ref: '#/components/parameters/companyId'
+      responses:
+        '200':
+          $ref: '#/components/responses/CompanyMemberListEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/members:
+    post:
+      summary: Add company member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberMutationBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/UpdatedAtEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+    patch:
+      summary: Update company member role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberMutationBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/UpdatedAtEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+    delete:
+      summary: Delete company member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [companyId, userId]
+              properties:
+                companyId:
+                  $ref: '#/components/schemas/UUID'
+                userId:
+                  $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          $ref: '#/components/responses/UpdatedAtEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/shiftRequirements:
+    post:
+      summary: Create shift requirement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateShiftRequirementBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/ShiftRequirementEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+    patch:
+      summary: Update shift requirement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateShiftRequirementBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/UpdatedAtEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+    delete:
+      summary: Delete shift requirement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [companyId, shiftRequirementId]
+              properties:
+                companyId:
+                  $ref: '#/components/schemas/UUID'
+                shiftRequirementId:
+                  $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          $ref: '#/components/responses/UpdatedAtEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/{companyId}/shiftRequirements:
+    get:
+      summary: Get shift requirements
+      parameters:
+        - $ref: '#/components/parameters/companyId'
+      responses:
+        '200':
+          $ref: '#/components/responses/ShiftRequirementListEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/availabilitySlots:
+    put:
+      summary: Upsert my availability slots
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertAvailabilityBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/AvailabilityListEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+    delete:
+      summary: Delete one availability slot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [companyId, availabilitySlotId]
+              properties:
+                companyId:
+                  $ref: '#/components/schemas/UUID'
+                availabilitySlotId:
+                  $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          $ref: '#/components/responses/UpdatedAtEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/{companyId}/availabilitySlots:
+    get:
+      summary: Get availability slots
+      parameters:
+        - $ref: '#/components/parameters/companyId'
+        - in: query
+          name: userId
+          schema: { $ref: '#/components/schemas/UUID' }
+        - in: query
+          name: startAt
+          schema: { type: string, format: date-time }
+        - in: query
+          name: endAt
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          $ref: '#/components/responses/AvailabilityListEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/assignments/generate:
+    post:
+      summary: Generate assignments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [companyId]
+              properties:
+                companyId:
+                  $ref: '#/components/schemas/UUID'
+                startAt:
+                  type: string
+                  format: date-time
+                endAt:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          $ref: '#/components/responses/AssignmentListEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/assignments:
+    put:
+      summary: Replace assignments in bulk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceAssignmentsBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/AssignmentListEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/{companyId}/assignments:
+    get:
+      summary: Get assignments
+      parameters:
+        - $ref: '#/components/parameters/companyId'
+        - in: query
+          name: userId
+          schema: { $ref: '#/components/schemas/UUID' }
+        - in: query
+          name: startAt
+          schema: { type: string, format: date-time }
+        - in: query
+          name: endAt
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          $ref: '#/components/responses/AssignmentListEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/swapRequests:
+    post:
+      summary: Create swap request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [companyId, shiftAssignmentId]
+              properties:
+                companyId:
+                  $ref: '#/components/schemas/UUID'
+                shiftAssignmentId:
+                  $ref: '#/components/schemas/UUID'
+                reason:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/SwapRequestEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/{companyId}/swapRequests:
+    get:
+      summary: Get swap requests
+      parameters:
+        - $ref: '#/components/parameters/companyId'
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [Open, Claimed, Approved, Cancelled]
+      responses:
+        '200':
+          $ref: '#/components/responses/SwapRequestListEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/swapRequests/claim:
+    post:
+      summary: Claim swap request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SwapActionBody' }
+      responses:
+        '200':
+          $ref: '#/components/responses/SwapRequestEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/swapRequests/approve:
+    post:
+      summary: Approve swap request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SwapActionBody' }
+      responses:
+        '200':
+          $ref: '#/components/responses/SwapRequestEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/swapRequests/cancel:
+    post:
+      summary: Cancel swap request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SwapActionBody' }
+      responses:
+        '200':
+          $ref: '#/components/responses/SwapRequestEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/{companyId}/settings:
+    get:
+      summary: Get company settings
+      parameters:
+        - $ref: '#/components/parameters/companyId'
+      responses:
+        '200':
+          $ref: '#/components/responses/CompanySettingsEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+  /companies/settings:
+    patch:
+      summary: Update company settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCompanySettingsBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/CompanySettingsEnvelope'
+        default:
+          $ref: '#/components/responses/ErrorEnvelope'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    companyId:
+      in: path
+      name: companyId
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+  responses:
+    ErrorEnvelope:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    UpdatedAtEnvelope:
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/SuccessEnvelopeBase'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      updatedAt:
+                        type: string
+                        format: date-time
+    CompanyEnvelope:
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/SuccessEnvelopeBase'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Company'
+    CompanyListEnvelope:
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/SuccessEnvelopeBase'
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Company' }
+    CompanyMemberListEnvelope:
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/SuccessEnvelopeBase'
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/CompanyMember' }
+    ShiftRequirementEnvelope:
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/SuccessEnvelopeBase'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/ShiftRequirement' }
+    ShiftRequirementListEnvelope:
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/SuccessEnvelopeBase'
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ShiftRequirement' }
+    AvailabilityListEnvelope:
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/SuccessEnvelopeBase'
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/AvailabilitySlot' }
+    AssignmentListEnvelope:
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/SuccessEnvelopeBase'
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Assignment' }
+    SwapRequestEnvelope:
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/SuccessEnvelopeBase'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/SwapRequest'
+    SwapRequestListEnvelope:
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/SuccessEnvelopeBase'
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/SwapRequest' }
+    CompanySettingsEnvelope:
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/SuccessEnvelopeBase'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CompanySettings'
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+    SuccessEnvelopeBase:
+      type: object
+      required: [success, data, exception]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data: {}
+        exception:
+          nullable: true
+          type: object
+    ErrorEnvelope:
+      type: object
+      required: [success, data, exception]
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        data:
+          nullable: true
+        exception:
+          type: object
+          properties:
+            code: { type: integer }
+            reason: { type: string }
+            prefix: { type: string }
+            message: { type: string }
+            status: { type: integer }
+            details: {}
+            error: {}
+    Company:
+      type: object
+      properties:
+        id: { $ref: '#/components/schemas/UUID' }
+        name: { type: string }
+        description: { type: string }
+        email: { type: string }
+        updatedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+    CompanyMember:
+      type: object
+      properties:
+        userId: { $ref: '#/components/schemas/UUID' }
+        name: { type: string }
+        displayName: { type: string }
+        email: { type: string }
+        employeeRole: { type: string, enum: [Manager, Staff] }
+    ShiftRequirement:
+      type: object
+      properties:
+        id: { $ref: '#/components/schemas/UUID' }
+        companyId: { $ref: '#/components/schemas/UUID' }
+        employeeRole: { type: string, enum: [Manager, Staff] }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        requiredCount: { type: integer }
+        note: { type: string }
+        updatedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+    AvailabilitySlot:
+      type: object
+      properties:
+        id: { $ref: '#/components/schemas/UUID' }
+        companyId: { $ref: '#/components/schemas/UUID' }
+        userId: { $ref: '#/components/schemas/UUID' }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        isAvailable: { type: boolean }
+        updatedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+    Assignment:
+      type: object
+      properties:
+        id: { $ref: '#/components/schemas/UUID' }
+        companyId: { $ref: '#/components/schemas/UUID' }
+        shiftRequirementId: { $ref: '#/components/schemas/UUID' }
+        userId: { $ref: '#/components/schemas/UUID' }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+    SwapRequest:
+      type: object
+      properties:
+        id: { $ref: '#/components/schemas/UUID' }
+        companyId: { $ref: '#/components/schemas/UUID' }
+        shiftAssignmentId: { $ref: '#/components/schemas/UUID' }
+        requesterUserId: { $ref: '#/components/schemas/UUID' }
+        claimedByUserId:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/UUID'
+        status: { type: string, enum: [Open, Claimed, Approved, Cancelled] }
+        reason: { type: string }
+        updatedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+    CompanySettings:
+      type: object
+      properties:
+        companyId: { $ref: '#/components/schemas/UUID' }
+        autoApproveSwaps: { type: boolean }
+        maxWeeklyHours: { type: integer }
+        minRestHours: { type: integer }
+        updatedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+    CreateCompanyBody:
+      type: object
+      required: [name, email]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        email: { type: string }
+    UpdateCompanyBody:
+      type: object
+      required: [companyId, values]
+      properties:
+        companyId: { $ref: '#/components/schemas/UUID' }
+        values:
+          type: object
+          properties:
+            name: { type: string }
+            description: { type: string }
+            email: { type: string }
+        setNull:
+          type: object
+          additionalProperties: { type: boolean }
+    MemberMutationBody:
+      type: object
+      required: [companyId, userId, employeeRole]
+      properties:
+        companyId: { $ref: '#/components/schemas/UUID' }
+        userId: { $ref: '#/components/schemas/UUID' }
+        employeeRole: { type: string, enum: [Manager, Staff] }
+    CreateShiftRequirementBody:
+      type: object
+      required: [companyId, employeeRole, startAt, endAt, requiredCount]
+      properties:
+        companyId: { $ref: '#/components/schemas/UUID' }
+        employeeRole: { type: string, enum: [Manager, Staff] }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        requiredCount: { type: integer }
+        note: { type: string }
+    UpdateShiftRequirementBody:
+      type: object
+      required: [companyId, shiftRequirementId, values]
+      properties:
+        companyId: { $ref: '#/components/schemas/UUID' }
+        shiftRequirementId: { $ref: '#/components/schemas/UUID' }
+        values:
+          type: object
+          properties:
+            employeeRole: { type: string, enum: [Manager, Staff] }
+            startAt: { type: string, format: date-time }
+            endAt: { type: string, format: date-time }
+            requiredCount: { type: integer }
+            note: { type: string }
+        setNull:
+          type: object
+          additionalProperties: { type: boolean }
+    UpsertAvailabilityBody:
+      type: object
+      required: [companyId, slots]
+      properties:
+        companyId: { $ref: '#/components/schemas/UUID' }
+        slots:
+          type: array
+          items:
+            type: object
+            required: [startAt, endAt]
+            properties:
+              startAt: { type: string, format: date-time }
+              endAt: { type: string, format: date-time }
+              isAvailable: { type: boolean }
+    ReplaceAssignmentsBody:
+      type: object
+      required: [companyId, assignments]
+      properties:
+        companyId: { $ref: '#/components/schemas/UUID' }
+        assignments:
+          type: array
+          items:
+            type: object
+            required: [shiftRequirementId, userId, startAt, endAt]
+            properties:
+              shiftRequirementId: { $ref: '#/components/schemas/UUID' }
+              userId: { $ref: '#/components/schemas/UUID' }
+              startAt: { type: string, format: date-time }
+              endAt: { type: string, format: date-time }
+    SwapActionBody:
+      type: object
+      required: [companyId, swapRequestId]
+      properties:
+        companyId: { $ref: '#/components/schemas/UUID' }
+        swapRequestId: { $ref: '#/components/schemas/UUID' }
+    UpdateCompanySettingsBody:
+      type: object
+      required: [companyId, values]
+      properties:
+        companyId: { $ref: '#/components/schemas/UUID' }
+        values:
+          type: object
+          properties:
+            autoApproveSwaps: { type: boolean }
+            maxWeeklyHours: { type: integer }
+            minRestHours: { type: integer }
+        setNull:
+          type: object
+          additionalProperties: { type: boolean }

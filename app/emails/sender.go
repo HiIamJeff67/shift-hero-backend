@@ -1,6 +1,9 @@
 package emails
 
 import (
+	"errors"
+	"strings"
+
 	"gopkg.in/gomail.v2"
 
 	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
@@ -22,8 +25,8 @@ var (
 	AppEmailSender = &EmailSender{
 		Host:     util.GetEnv("SMTP_HOST", "smtp.gmail.com"),
 		Port:     util.GetIntEnv("SMTP_PORT", 587),
-		UserName: officialMail,
-		Password: officialPass,
+		UserName: smtpUsername,
+		Password: smtpPassword,
 		From:     officialName + "<" + officialMail + ">",
 	}
 )
@@ -31,6 +34,16 @@ var (
 func (s *EmailSender) AsyncSend(to string, subject string, body string, contentType types.EmailContentType) *exceptions.Exception {
 	if !contentType.IsValidEnum() {
 		return exceptions.Email.InvalidEmailContentType(string(contentType))
+	}
+	if strings.TrimSpace(s.UserName) == "" || strings.EqualFold(strings.TrimSpace(s.UserName), "noreply@example.com") {
+		return exceptions.Email.FailedToSendEmailWithSubject(subject).WithOrigin(
+			errors.New("missing or placeholder SMTP username (set SMTP_USERNAME or APP_OFFICIAL_GMAIL)"),
+		)
+	}
+	if strings.TrimSpace(s.Password) == "" {
+		return exceptions.Email.FailedToSendEmailWithSubject(subject).WithOrigin(
+			errors.New("missing SMTP password (set SMTP_PASSWORD or APP_OFFICIAL_GOOGLE_APPLICATION_PASSWORD)"),
+		)
 	}
 
 	contentTypeString := contentType.String()

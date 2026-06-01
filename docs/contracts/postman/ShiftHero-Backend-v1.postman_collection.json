@@ -1,0 +1,49 @@
+{
+  "info": {
+    "name": "ShiftHero Backend v1",
+    "description": "Company + Scheduling contract collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:7777/api/development/v1" },
+    { "key": "token", "value": "" },
+    { "key": "companyId", "value": "00000000-0000-0000-0000-000000000000" }
+  ],
+  "item": [
+    {
+      "name": "Company",
+      "item": [
+        {"name":"Create Company","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies","body":{"mode":"raw","raw":"{\n  \"name\": \"My Company\",\n  \"description\": \"desc\",\n  \"email\": \"company@example.com\"\n}"}}},
+        {"name":"Get My Companies","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/companies/me"}},
+        {"name":"Get Company","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/companies/{{companyId}}"}},
+        {"name":"Update Company","request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"values\": {\"name\": \"New Name\"}\n}"}}},
+        {"name":"Get Members","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/companies/{{companyId}}/members"}},
+        {"name":"Add Member","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/members","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"userId\": \"00000000-0000-0000-0000-000000000001\",\n  \"employeeRole\": \"Staff\"\n}"}}},
+        {"name":"Update Member Role","request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/members","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"userId\": \"00000000-0000-0000-0000-000000000001\",\n  \"employeeRole\": \"Manager\"\n}"}}},
+        {"name":"Delete Member","request":{"method":"DELETE","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/members","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"userId\": \"00000000-0000-0000-0000-000000000001\"\n}"}}}
+      ]
+    },
+    {
+      "name": "Scheduling",
+      "item": [
+        {"name":"Create Shift Requirement","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/shiftRequirements","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"employeeRole\": \"Staff\",\n  \"startAt\": \"2026-06-01T09:00:00Z\",\n  \"endAt\": \"2026-06-01T17:00:00Z\",\n  \"requiredCount\": 2\n}"}}},
+        {"name":"Get Shift Requirements","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/companies/{{companyId}}/shiftRequirements"}},
+        {"name":"Update Shift Requirement","request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/shiftRequirements","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"shiftRequirementId\": \"00000000-0000-0000-0000-000000000100\",\n  \"values\": {\"requiredCount\": 3}\n}"}}},
+        {"name":"Delete Shift Requirement","request":{"method":"DELETE","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/shiftRequirements","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"shiftRequirementId\": \"00000000-0000-0000-0000-000000000100\"\n}"}}},
+        {"name":"Upsert Availability","request":{"method":"PUT","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/availabilitySlots","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"slots\": [{\"startAt\": \"2026-06-01T09:00:00Z\", \"endAt\": \"2026-06-01T17:00:00Z\", \"isAvailable\": true}]\n}"}}},
+        {"name":"Get Availability","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/companies/{{companyId}}/availabilitySlots"}},
+        {"name":"Delete Availability","request":{"method":"DELETE","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/availabilitySlots","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"availabilitySlotId\": \"00000000-0000-0000-0000-000000000200\"\n}"}}},
+        {"name":"Generate Assignments","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/assignments/generate","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\"\n}"}}},
+        {"name":"Replace Assignments","request":{"method":"PUT","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/assignments","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"assignments\": []\n}"}}},
+        {"name":"Get Assignments","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/companies/{{companyId}}/assignments"}},
+        {"name":"Create Swap","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/swapRequests","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"shiftAssignmentId\": \"00000000-0000-0000-0000-000000000300\"\n}"}}},
+        {"name":"Get Swaps","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/companies/{{companyId}}/swapRequests"}},
+        {"name":"Claim Swap","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/swapRequests/claim","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"swapRequestId\": \"00000000-0000-0000-0000-000000000400\"\n}"}}},
+        {"name":"Approve Swap","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/swapRequests/approve","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"swapRequestId\": \"00000000-0000-0000-0000-000000000400\"\n}"}}},
+        {"name":"Cancel Swap","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/swapRequests/cancel","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"swapRequestId\": \"00000000-0000-0000-0000-000000000400\"\n}"}}},
+        {"name":"Get Settings","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/companies/{{companyId}}/settings"}},
+        {"name":"Patch Settings","request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/companies/settings","body":{"mode":"raw","raw":"{\n  \"companyId\": \"{{companyId}}\",\n  \"values\": {\"autoApproveSwaps\": true}\n}"}}}
+      ]
+    }
+  ]
+}

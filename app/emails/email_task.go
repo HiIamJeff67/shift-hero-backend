@@ -9,11 +9,13 @@ import (
 type EmailTaskType string
 
 const (
-	EmailTaskType_Undefined  EmailTaskType = "Undefined"
-	EmailTaskType_Welcome    EmailTaskType = "EmailTaskType_Welcome"
-	EmailTaskType_Validation EmailTaskType = "EmailTaskType_Validation"
-	EmailTaskType_Security   EmailTaskType = "EmailTaskType_Security"
-	EmailTaskType_News       EmailTaskType = "EmailTaskType_News"
+	EmailTaskType_Undefined    EmailTaskType = "Undefined"
+	EmailTaskType_Welcome      EmailTaskType = "EmailTaskType_Welcome"
+	EmailTaskType_Validation   EmailTaskType = "EmailTaskType_Validation"
+	EmailTaskType_Security     EmailTaskType = "EmailTaskType_Security"
+	EmailTaskType_SwapClaimed  EmailTaskType = "EmailTaskType_SwapClaimed"
+	EmailTaskType_SwapApproved EmailTaskType = "EmailTaskType_SwapApproved"
+	EmailTaskType_News         EmailTaskType = "EmailTaskType_News"
 )
 
 type EmailObject struct {

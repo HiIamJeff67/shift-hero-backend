@@ -1,6 +1,8 @@
 package interceptors
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
@@ -53,7 +55,7 @@ func ShareableResponseWriterInterceptor(interceptors ...func(string) gin.Handler
 			writer.ResponseWriter.WriteHeader(writer.Code)
 		}
 
-		writer.ResponseWriter.Header().Set("Content-Length", string(rune(writer.Body.Len())))
+		writer.ResponseWriter.Header().Set("Content-Length", strconv.Itoa(writer.Body.Len()))
 		writer.ResponseWriter.Write(writer.Body.Bytes())
 	}
 }

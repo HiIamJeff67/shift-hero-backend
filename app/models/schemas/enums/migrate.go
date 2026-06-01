@@ -15,4 +15,6 @@ var MigratingEnums = map[string][]string{
 	new(UserRole).Name():                  AllUserRoleStrings,
 	new(UserStatus).Name():                AllUserStatusStrings,
 	new(UsersToBillingPlansStatus).Name(): AllUsersToBillingPlansStatusStrings,
+	new(EmployeeRole).Name():              AllEmployeeRoleStrings,
+	new(SwapRequestStatus).Name():         AllSwapRequestStatusStrings,
 }

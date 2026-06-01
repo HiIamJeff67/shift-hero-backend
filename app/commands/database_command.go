@@ -86,6 +86,9 @@ var migrateDatabaseCommand = &cobra.Command{
 		if !models.MigrateEnumsToDatabase(db) {
 			return
 		}
+		if !models.MigrateEmployeeRoleToUsersToCompanies(db) {
+			return
+		}
 		if !models.MigrateTablesToDatabase(db) {
 			return
 		}

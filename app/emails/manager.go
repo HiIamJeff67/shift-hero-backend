@@ -58,7 +58,15 @@ func (ewm *EmailWorkerManager) generateTaskId() string {
 func (ewm *EmailWorkerManager) processTask(task *EmailTask, workerId int) {
 	exception := ewm.emailSender.AsyncSend(task.Object.To, task.Object.Subject, task.Object.Body, task.Object.EmailContentType)
 	if exception != nil {
-		exceptions.Email.FailedToSendEmailByWorkers(workerId, task.Retries+1, task.MaxRetries).Log()
+		exceptions.Email.
+			FailedToSendEmailByWorkers(workerId, task.Retries+1, task.MaxRetries).
+			WithOrigin(exception.GetOrigin()).
+			WithDetails(map[string]any{
+				"to":      task.Object.To,
+				"subject": task.Object.Subject,
+				"type":    task.Type,
+			}).
+			Log()
 
 		task.Retries++
 		if task.Retries < task.MaxRetries {

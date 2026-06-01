@@ -226,6 +226,84 @@ func MigrateTablesToDatabase(db *gorm.DB) bool {
 	return true
 }
 
+func MigrateEmployeeRoleToUsersToCompanies(db *gorm.DB) bool {
+	logs.Info(traces.GetTrace(0).FileLineString(), "Migrating employee role ownership from UserTable to UsersToCompaniesTable ...")
+
+	if err := db.AutoMigrate(&schemas.Company{}, &schemas.UsersToCompanies{}); err != nil {
+		logs.FError(traces.GetTrace(0).FileLineString(), "Failed to migrate Company/UsersToCompanies baseline tables: %v", err)
+		return false
+	}
+
+	if err := db.Exec(`
+		ALTER TABLE "UsersToCompaniesTable"
+		ADD COLUMN IF NOT EXISTS employee_role "EmployeeRole";
+	`).Error; err != nil {
+		logs.FError(traces.GetTrace(0).FileLineString(), "Failed to add employee_role to UsersToCompaniesTable: %v", err)
+		return false
+	}
+
+	var userEmployeeRoleExists bool
+	if err := db.Raw(`
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.columns
+			WHERE table_name = 'UserTable' AND column_name = 'employee_role'
+		);
+	`).Scan(&userEmployeeRoleExists).Error; err != nil {
+		logs.FError(traces.GetTrace(0).FileLineString(), "Failed to inspect employee_role on UserTable: %v", err)
+		return false
+	}
+
+	if userEmployeeRoleExists {
+		if err := db.Exec(`
+			UPDATE "UsersToCompaniesTable" AS utc
+			SET employee_role = u.employee_role
+			FROM "UserTable" AS u
+			WHERE utc.user_id = u.id
+				AND (utc.employee_role IS NULL);
+		`).Error; err != nil {
+			logs.FError(traces.GetTrace(0).FileLineString(), "Failed to backfill UsersToCompaniesTable.employee_role: %v", err)
+			return false
+		}
+	}
+
+	if err := db.Exec(`
+		UPDATE "UsersToCompaniesTable"
+		SET employee_role = 'Staff'
+		WHERE employee_role IS NULL;
+	`).Error; err != nil {
+		logs.FError(traces.GetTrace(0).FileLineString(), "Failed to normalize NULL employee_role in UsersToCompaniesTable: %v", err)
+		return false
+	}
+
+	if err := db.Exec(`
+		ALTER TABLE "UsersToCompaniesTable"
+		ALTER COLUMN employee_role SET DEFAULT 'Staff';
+	`).Error; err != nil {
+		logs.FError(traces.GetTrace(0).FileLineString(), "Failed to set default on UsersToCompaniesTable.employee_role: %v", err)
+		return false
+	}
+
+	if err := db.Exec(`
+		ALTER TABLE "UsersToCompaniesTable"
+		ALTER COLUMN employee_role SET NOT NULL;
+	`).Error; err != nil {
+		logs.FError(traces.GetTrace(0).FileLineString(), "Failed to set not null on UsersToCompaniesTable.employee_role: %v", err)
+		return false
+	}
+
+	if err := db.Exec(`
+		ALTER TABLE "UserTable"
+		DROP COLUMN IF EXISTS employee_role;
+	`).Error; err != nil {
+		logs.FError(traces.GetTrace(0).FileLineString(), "Failed to drop UserTable.employee_role: %v", err)
+		return false
+	}
+
+	logs.Info(traces.GetTrace(0).FileLineString(), "EmployeeRole migration switch is done")
+	return true
+}
+
 func MigrateTriggersToDatabase(db *gorm.DB) bool {
 	logs.Info(traces.GetTrace(0).FileLineString(), "Migrating triggers found in models/schemas/triggers/migrate.go")
 

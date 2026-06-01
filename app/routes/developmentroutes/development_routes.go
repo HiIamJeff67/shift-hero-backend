@@ -30,6 +30,8 @@ func ConfigureDevelopmentRoutes() {
 	configureUserSettingRoutes()
 	configureDevelopmentUserAccountRoutes()
 	configureDevelopmentGraphQLRoutes()
+	configureDevelopmentCompanyRoutes()
+	configureDevelopmentSchedulingRoutes()
 
 	// test
 	configureStaticRoutes()

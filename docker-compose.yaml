@@ -8,7 +8,7 @@ services:
     command: ["redis-server", "--appendonly", "yes"]
     networks:
       shift-hero-net:
-        ipv4_address: 172.30.0.13
+        ipv4_address: 10.251.0.13
     volumes:
       - redis-data:/data
 
@@ -25,7 +25,7 @@ services:
       - "${DB_PORT}:${DOCKER_DB_PORT}"
     networks:
       shift-hero-net:
-        ipv4_address: 172.30.0.12
+        ipv4_address: 10.251.0.12
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -43,7 +43,7 @@ services:
       dockerfile: infra/docker/Dockerfile.dev
     networks:
       shift-hero-net:
-        ipv4_address: 172.30.0.11
+        ipv4_address: 10.251.0.11
     volumes:
       - .:/shift-hero
       - /shift-hero/tmp
@@ -83,7 +83,7 @@ services:
       - "${NGINX_HTTP_PORT}:${DOCKER_NGINX_HTTP_PORT}"
     networks:
       shift-hero-net:
-        ipv4_address: 172.30.0.10
+        ipv4_address: 10.251.0.10
     volumes:
       - ./infra/nginx/default.dev.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
@@ -99,7 +99,7 @@ services:
       DOCKER_LOKI_PORT: ${DOCKER_LOKI_PORT}
     networks:
       shift-hero-net:
-        ipv4_address: 172.30.0.14
+        ipv4_address: 10.251.0.14
     volumes:
       - ./infra/monitor/loki-config.dev.yaml:/etc/loki.yaml
       - loki-data:/loki
@@ -127,7 +127,7 @@ services:
       - "${TEMPO_PORT}:${DOCKER_TEMPO_PORT}"
     networks:
       shift-hero-net:
-        ipv4_address: 172.30.0.15
+        ipv4_address: 10.251.0.15
     volumes:
       - ./infra/monitor/tempo-config.dev.yaml:/etc/tempo.yaml
       - tempo-data:/var/tempo
@@ -149,7 +149,7 @@ services:
       - "${MIMIR_PORT}:${DOCKER_MIMIR_PORT}"
     networks:
       shift-hero-net:
-        ipv4_address: 172.30.0.16
+        ipv4_address: 10.251.0.16
     # healthcheck:
     #   test:
     #     [
@@ -175,7 +175,7 @@ services:
       - "${OTEL_COLLECTOR_HTTP_PORT}:${DOCKER_OTEL_COLLECTOR_HTTP_PORT}" # OTLP HTTP
     networks:
       shift-hero-net:
-        ipv4_address: 172.30.0.17
+        ipv4_address: 10.251.0.17
     volumes:
       - ./infra/monitor/otel-collector-config.dev.yaml:/etc/otelcol-contrib/config.yaml
     depends_on:
@@ -202,7 +202,7 @@ services:
       - "${GRAFANA_PORT}:${DOCKER_GRAFANA_PORT}"
     networks:
       shift-hero-net:
-        ipv4_address: 172.30.0.18
+        ipv4_address: 10.251.0.18
     volumes:
       - ./infra/monitor/grafana/datasources.dev.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
     depends_on:
@@ -215,7 +215,7 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.30.0.0/16
+        - subnet: 10.251.0.0/16
 
 volumes:
   redis-data:

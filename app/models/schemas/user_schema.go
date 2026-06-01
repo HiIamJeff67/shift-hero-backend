@@ -35,6 +35,10 @@ type User struct {
 	UserSetting         UserSetting           `json:"userSetting" gorm:"foreignKey:UserId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	PlanLimitation      PlanLimitation        `json:"planLimitation" gorm:"foreignKey:Plan; references:Key; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	UsersToBillingPlans []UsersToBillingPlans `json:"usersToBillingPlans" gorm:"foreignKey:UserId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	UsersToCompanies    []UsersToCompanies    `json:"usersToCompanies" gorm:"foreignKey:UserId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	AvailabilitySlots   []AvailabilitySlot    `json:"availabilitySlots" gorm:"foreignKey:UserId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	ShiftAssignments    []ShiftAssignment     `json:"shiftAssignments" gorm:"foreignKey:UserId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	SwapRequests        []SwapRequest         `json:"swapRequests" gorm:"foreignKey:RequesterUserId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }
 
 // User Table Name
@@ -51,6 +55,10 @@ const (
 	UserRelation_UserSetting         UserRelation = "UserSetting"
 	UserRelation_PlanLimitation      UserRelation = "PlanLimitation"
 	UserRelation_UsersToBillingPlans UserRelation = "UsersToBillingPlans"
+	UserRelation_UsersToCompanies    UserRelation = "UsersToCompanies"
+	UserRelation_AvailabilitySlots   UserRelation = "AvailabilitySlots"
+	UserRelation_ShiftAssignments    UserRelation = "ShiftAssignments"
+	UserRelation_SwapRequests        UserRelation = "SwapRequests"
 )
 
 /* ============================== Relative Type Conversions ============================== */

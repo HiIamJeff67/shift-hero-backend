@@ -1,0 +1,13 @@
+{
+  "success": false,
+  "data": null,
+  "exception": {
+    "code": 530001,
+    "reason": "Forbidden",
+    "prefix": "Scheduling",
+    "message": "No permission",
+    "status": 403,
+    "details": null,
+    "error": null
+  }
+}
