@@ -1,0 +1,49 @@
+package developmentroutes
+
+import (
+	"net/http"
+	"time"
+
+	"github.com/gin-gonic/gin"
+
+	middlewares "github.com/your-org/go-start-monolithic-kit/app/middlewares"
+	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
+	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
+	storages "github.com/your-org/go-start-monolithic-kit/app/storages"
+)
+
+func configureStorageRoutes() {
+	storageRoute := DevelopmentRouterGroup.Group("/storage")
+	storageRoute.Use(
+		middlewares.UnauthorizedRateLimitMiddleware(),
+		middlewares.TimeoutMiddleware(5*time.Second),
+	)
+	{
+		// only on test environment
+		storageRoute.GET(
+			"/mock/files/:presignedURL",
+			func(ctx *gin.Context) {
+				// technically, we use the presigned url as the key in in memory storage
+				// since it is only for testing purposes
+				key := ctx.Param("presignedURL")
+				rc, object, exception := storages.InMemoryStorage.GetObjectByKey(ctx, key, nil)
+				if exception != nil {
+					ctx.JSON(http.StatusNotFound, gin.H{"error": "File not found."})
+					return
+				}
+				defer rc.Close()
+				logs.Info(traces.GetTrace(0).FileLineString(), "Successfully get the files!")
+				// logs.Info(traces.GetTrace(0).FileLineString(), "Details: ", object)
+				ctx.Data(http.StatusOK, object.ContentType, object.Data)
+			},
+		)
+		// only on test environment
+		storageRoute.GET(
+			"/listAllInTerminal",
+			func(ctx *gin.Context) {
+				storages.InMemoryStorage.ListAllInTerminal()
+				ctx.JSON(http.StatusOK, gin.H{"success": true})
+			},
+		)
+	}
+}

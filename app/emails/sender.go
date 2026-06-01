@@ -1,0 +1,49 @@
+package emails
+
+import (
+	"gopkg.in/gomail.v2"
+
+	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
+	util "github.com/your-org/go-start-monolithic-kit/app/util"
+	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+)
+
+/* ============================== Initialization & Instance ============================== */
+
+type EmailSender struct {
+	Host     string
+	Port     int
+	UserName string
+	Password string
+	From     string
+}
+
+var (
+	AppEmailSender = &EmailSender{
+		Host:     util.GetEnv("SMTP_HOST", "smtp.gmail.com"),
+		Port:     util.GetIntEnv("SMTP_PORT", 587),
+		UserName: officialMail,
+		Password: officialPass,
+		From:     officialName + "<" + officialMail + ">",
+	}
+)
+
+func (s *EmailSender) AsyncSend(to string, subject string, body string, contentType types.EmailContentType) *exceptions.Exception {
+	if !contentType.IsValidEnum() {
+		return exceptions.Email.InvalidEmailContentType(string(contentType))
+	}
+
+	contentTypeString := contentType.String()
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", s.From)
+	m.SetHeader("To", to)
+	m.SetHeader("Subject", subject)
+	m.SetBody(contentTypeString, body)
+
+	d := gomail.NewDialer(s.Host, s.Port, s.UserName, s.Password)
+	if err := d.DialAndSend(m); err != nil {
+		return exceptions.Email.FailedToSendEmailWithSubject(subject).WithOrigin(err)
+	}
+	return nil
+}

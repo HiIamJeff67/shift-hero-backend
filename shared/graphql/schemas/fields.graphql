@@ -1,0 +1,21 @@
+interface SearchConnection {
+  searchPageInfo: SearchPageInfo!
+  totalCount: Int!
+  searchTime: Float!
+}
+
+interface SearchEdge {
+  encodedSearchCursor: String!
+}
+
+enum SearchSortOrder {
+  ASC
+  DESC
+}
+
+type SearchPageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startEncodedSearchCursor: String
+  endEncodedSearchCursor: String
+}

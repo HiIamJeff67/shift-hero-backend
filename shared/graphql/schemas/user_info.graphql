@@ -1,0 +1,9 @@
+type PublicUserInfo {
+  avatarURL: String
+  coverBackgroundURL: String
+  header: String
+  introduction: String
+  gender: UserGender!
+  country: Country
+  birthDate: Time!
+}

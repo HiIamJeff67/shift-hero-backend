@@ -1,0 +1,18 @@
+query SearchUsers($input: SearchUserInput!) {
+  searchUsers(input: $input) {
+    searchEdges {
+      encodedSearchCursor
+      node {
+        ...PublicUserFragment
+      }
+    }
+    searchPageInfo {
+      hasNextPage
+      hasPreviousPage
+      startEncodedSearchCursor
+      endEncodedSearchCursor
+    }
+    totalCount
+    searchTime
+  }
+}

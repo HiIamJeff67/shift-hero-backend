@@ -1,0 +1,6 @@
+enum AccessControlPermission {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}

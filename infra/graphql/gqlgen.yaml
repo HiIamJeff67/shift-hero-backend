@@ -1,0 +1,340 @@
+# Where are all the schema files located? globs are supported eg  src/**/*.graphqls
+schema:
+  - shared/graphql/schemas/enums/*.graphql
+  - shared/graphql/schemas/*.graphql
+
+# Where should the generated server code go?
+exec:
+  package: generated
+  layout: follow-schema # Only other option is "follow-schema," ie multi-file.
+  dir: app/graphql/generated
+  filename_template: "{name}_generated.go" # optional
+
+# Uncomment to enable federation
+# federation:
+#   filename: graph/federation.go
+#   package: graph
+#   version: 2
+#   options:
+#     computed_requires: true
+
+# Where should any generated models go?
+model:
+  filename: app/graphql/models/models_gen.go
+  package: gqlmodels
+
+  # Optional: Pass in a path to a new gotpl template to use for generating the models
+  # model_template: [your/path/model.gotpl]
+
+# Where should the resolver implementations go?
+resolver:
+  package: resolvers
+  layout: follow-schema # Only other option is "single-file."
+
+  # Only for single-file layout:
+  # filename: graph/resolver.go
+
+  # Only for follow-schema layout:
+  dir: app/graphql/resolvers
+  filename_template: "{name}_resolver.go"
+
+  # Optional: turn on to not generate template comments above resolvers
+  # omit_template_comment: false
+  # Optional: Pass in a path to a new gotpl template to use for generating resolvers
+  # resolver_template: [your/path/resolver.gotpl]
+  # Optional: turn on to avoid rewriting existing resolver(s) when generating
+  # preserve_resolver: false
+
+# Optional: turn on use ` + "`" + `gqlgen:"fieldName"` + "`" + ` tags in your models
+struct_tag: json
+
+# Optional: turn on to use []Thing instead of []*Thing
+# omit_slice_element_pointers: false
+
+# Optional: turn on to omit Is<Name>() methods to interface and unions
+# omit_interface_checks: true
+
+# Optional: turn on to skip generation of ComplexityRoot struct content and Complexity function
+# omit_complexity: false
+
+# Optional: turn on to not generate any file notice comments in generated files
+# omit_gqlgen_file_notice: false
+
+# Optional: turn on to exclude the gqlgen version in the generated file notice. No effect if `omit_gqlgen_file_notice` is true.
+# omit_gqlgen_version_in_file_notice: false
+
+# Optional: turn on to exclude root models such as Query and Mutation from the generated models file.
+# omit_root_models: false
+
+# Optional: turn on to exclude resolver fields from the generated models file.
+# omit_resolver_fields: false
+
+# Optional: turn off to make struct-type struct fields not use pointers
+# e.g. type Thing struct { FieldA OtherThing } instead of { FieldA *OtherThing }
+struct_fields_always_pointers: true
+
+# Optional: turn off to make resolvers return values instead of pointers for structs
+resolvers_always_return_pointers: true
+
+# Optional: turn on to return pointers instead of values in unmarshalInput
+# return_pointers_in_unmarshalinput: false
+
+# Optional: wrap nullable input fields with Omittable
+# nullable_input_omittable: true
+
+# Optional: set to speed up generation time by not performing a final validation pass.
+# skip_validation: true
+
+# Optional: set to skip running `go mod tidy` when generating server code
+# skip_mod_tidy: true
+
+# Optional: if this is set to true, argument directives that
+# decorate a field with a null value will still be called.
+#
+# This enables argumment directives to not just mutate
+# argument values but to set them even if they're null.
+call_argument_directives_with_null: true
+
+# This enables gql server to use function syntax for execution context
+# instead of generating receiver methods of the execution context.
+# use_function_syntax_for_execution_context: true
+
+# Optional: set build tags that will be used to load packages
+# go_build_tags:
+#  - private
+#  - enterprise
+
+# Optional: set to modify the initialisms regarded for Go names
+# go_initialisms:
+#   replace_defaults: false # if true, the default initialisms will get dropped in favor of the new ones instead of being added
+#   initialisms: # List of initialisms to for Go names
+#     - 'CC'
+#     - 'BCC'
+
+# gqlgen will search for any type names in the schema in these go packages
+# if they match it will use them, otherwise it will generate them.
+autobind:
+  - "github.com/your-org/go-start-monolithic-kit/app/models/schemas"
+
+# This section declares type mapping between the GraphQL and go type systems
+#
+# The first line in each type will be used as defaults for resolver arguments and
+# modelgen, the others will be allowed when binding to fields. Configure them to
+# your liking
+
+models:
+  Int:
+    model: "github.com/99designs/gqlgen/graphql.Int32"
+  Int32:
+    model: "github.com/99designs/gqlgen/graphql.Int32"
+  Int64:
+    model: "github.com/99designs/gqlgen/graphql.Int64"
+
+  # =============== Scalars =============== #
+
+  UUID:
+    model: "github.com/your-org/go-start-monolithic-kit/app/graphql/scalars.UUID"
+    # marshal: github.com/your-org/go-start-monolithic-kit/app/graphql/scalars.MarshalUUID
+    # unmarshal: github.com/your-org/go-start-monolithic-kit/app/graphql/scalars.UnmarshalUUID
+  Time:
+    model: "github.com/your-org/go-start-monolithic-kit/app/graphql/scalars.Time"
+    # marshal: github.com/your-org/go-start-monolithic-kit/app/graphql/scalars.MarshalTime
+    # unmarshal: github.com/your-org/go-start-monolithic-kit/app/graphql/scalars.UnmarshalTime
+  Base64Bytes:
+    model: "github.com/your-org/go-start-monolithic-kit/app/graphql/scalars.Base64Bytes"
+    # marshal: github.com/your-org/go-start-monolithic-kit/app/graphql/scalar.MarshalBase64Bytes
+    # unmarshal: github.com/your-org/go-start-monolithic-kit/app/graphql/scalar.UnmarshalBase64Bytes
+
+  # ============================== Corresponded Enums Which Have Prebuilt in Gorm ============================== #
+
+  AccessControlPermission:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.AccessControlPermission"
+  BadgeType:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.BadgeType"
+  CountryCode:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.CountryCode"
+    enum_values:
+      COUNTRY_CODE_886:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.CountryCode_Taiwan"
+      COUNTRY_CODE_81:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.CountryCode_Japan"
+      COUNTRY_CODE_60:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.CountryCode_Malaysia"
+      COUNTRY_CODE_65:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.CountryCode_Singapore"
+      COUNTRY_CODE_86:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.CountryCode_China"
+      COUNTRY_CODE_1:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.CountryCode_NANP"
+      COUNTRY_CODE_44:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.CountryCode_UnitedKingdom"
+      COUNTRY_CODE_61:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.CountryCode_Australia"
+  Country:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.Country"
+  ItemType:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.ItemType"
+    enum_values:
+      ItemType_BlockPack:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.ItemType_BlockPack"
+      ItemType_Material:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.ItemType_Material"
+  Language:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.Language"
+  MaterialContentType:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType"
+    enum_values:
+      None:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_None"
+      Application_JSON:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_JSON"
+      Application_PDF:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_PDF"
+      Text_Plain:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_PlainText"
+      Text_HTML:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_HTML"
+      Text_Markdown:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_Markdown"
+      Image_PNG:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_PNG"
+      Image_JPG:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_JPG"
+      Image_JPEG:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_JPEG"
+      Image_GIF:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_GIF"
+      Image_SVG:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_SVG"
+      Image_WebP:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_WebP"
+      Video_MP4:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_MP4"
+      Video_WebM:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_WebM"
+      Audio_Mpeg:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.MaterialContentType_Mpeg"
+  RoutinePeriod:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutinePeriod"
+    enum_values:
+      RoutinePeriod_Daily:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutinePeriod_Daily"
+      RoutinePeriod_Weekly:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutinePeriod_Weekly"
+      RoutinePeriod_Monthly:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutinePeriod_Monthly"
+      RoutinePeriod_Yearly:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutinePeriod_Yearly"
+  RoutineStatus:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineStatus"
+    enum_values:
+      RoutineStatus_Scheduled:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineStatus_Scheduled"
+      RoutineStatus_InProgress:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineStatus_InProgress"
+      RoutineStatus_Completed:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineStatus_Completed"
+      RoutineStatus_OverDue:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineStatus_OverDue"
+  RoutineTaskPurpose:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskPurpose"
+    enum_values:
+      RoutineTaskPurpose_CreateBlockPack:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskPurpose_CreateBlockPack"
+      RoutineTaskPurpose_DeleteBlockPack:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskPurpose_DeleteBlockPack"
+      RoutineTaskPurpose_CreateBlock:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskPurpose_CreateBlock"
+      RoutineTaskPurpose_UpdateBlock:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskPurpose_UpdateBlock"
+      RoutineTaskPurpose_DeleteBlock:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskPurpose_DeleteBlock"
+  RoutineTaskStatus:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskStatus"
+    enum_values:
+      RoutineTaskStatus_Idle:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskStatus_Idle"
+      RoutineTaskStatus_Waiting:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskStatus_Waiting"
+      RoutineTaskStatus_Running:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskStatus_Running"
+      RoutineTaskStatus_Pause:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskStatus_Pause"
+      RoutineTaskStatus_Cancel:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskStatus_Cancel"
+      RoutineTaskStatus_Success:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskStatus_Success"
+      RoutineTaskStatus_Fail:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.RoutineTaskStatus_Fail"
+  SupportedIcon:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon"
+    enum_values:
+      SupportedIcon_GrinningFace:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_GrinningFace"
+      SupportedIcon_SmilingFaceWithSmilingEyes:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_SmilingFaceWithSmilingEyes"
+      SupportedIcon_RedHeart:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_RedHeart"
+      SupportedIcon_Fire:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_Fire"
+      SupportedIcon_Star:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_Star"
+      SupportedIcon_Books:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_Books"
+      SupportedIcon_Notebook:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_Notebook"
+      SupportedIcon_PencilPaper:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_PencilPaper"
+      SupportedIcon_Lightbulb:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_Lightbulb"
+      SupportedIcon_Rocket:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_Rocket"
+      SupportedIcon_CheckMark:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_CheckMark"
+      SupportedIcon_Pin:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_Pin"
+      SupportedIcon_FolderOpen:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_FolderOpen"
+      SupportedIcon_Calendar:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_Calendar"
+      SupportedIcon_Clock:
+        value: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.SupportedIcon_Clock"
+  UserRole:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.UserRole"
+  UserPlan:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.UserPlan"
+  UserStatus:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.UserStatus"
+  UserGender:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums.UserGender"
+
+  # ============================== Corresponded Schemas Which Have Prebuilt in Gorm ============================== #
+
+  User:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas.User"
+  UserInfo:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas.UserInfo"
+  UserAccount:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas.UserAccount"
+  UserSetting:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas.UserSetting"
+  Theme:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas.Theme"
+  Badge:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas.Badge"
+  UsersToBadges:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas.UsersToBadges"
+  Shelf:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas.Shelf"
+  Material:
+    model: "github.com/your-org/go-start-monolithic-kit/app/models/schemas.Material"
+
+  # The GraphQL spec explicitly states that the Int type is a signed 32-bit
+  # integer. Using Go int or int64 to represent it can lead to unexpected
+  # behavior, and some GraphQL tools like Apollo Router will fail when
+  # communicating numbers that overflow 32-bits.
+  #
+  # You may choose to use the custom, built-in Int64 scalar to represent 64-bit
+  # integers, or ignore the spec and bind Int to graphql.Int / graphql.Int64
+  # (the default behavior of gqlgen). This is fine in simple use cases when you
+  # do not need to worry about interoperability and only expect small numbers.

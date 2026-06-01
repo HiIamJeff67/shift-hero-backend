@@ -1,0 +1,6 @@
+enum UserGender {
+  UNSPECIFIED
+  MALE
+  FEMALE
+  NON_BINARY
+}

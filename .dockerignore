@@ -1,0 +1,7 @@
+docs/**
+*.temp
+temp/
+tmp/
+*.tmp
+.vscode/**
+LICENSES/**

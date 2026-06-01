@@ -1,0 +1,1270 @@
+package services
+
+import (
+	"context"
+	"regexp"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+
+	caches "github.com/your-org/go-start-monolithic-kit/app/caches"
+	dtos "github.com/your-org/go-start-monolithic-kit/app/dtos"
+	emails "github.com/your-org/go-start-monolithic-kit/app/emails"
+	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
+	models "github.com/your-org/go-start-monolithic-kit/app/models"
+	inputs "github.com/your-org/go-start-monolithic-kit/app/models/inputs"
+	repositories "github.com/your-org/go-start-monolithic-kit/app/models/repositories"
+	schemas "github.com/your-org/go-start-monolithic-kit/app/models/schemas"
+	enums "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums"
+	options "github.com/your-org/go-start-monolithic-kit/app/options"
+	tokens "github.com/your-org/go-start-monolithic-kit/app/tokens"
+	util "github.com/your-org/go-start-monolithic-kit/app/util"
+	validation "github.com/your-org/go-start-monolithic-kit/app/validation"
+	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
+
+	authsql "github.com/your-org/go-start-monolithic-kit/app/models/sqls/auth"
+	usersql "github.com/your-org/go-start-monolithic-kit/app/models/sqls/user"
+)
+
+type AuthServiceInterface interface {
+	Register(ctx context.Context, reqDto *dtos.RegisterReqDto) (*dtos.RegisterResDto, *exceptions.Exception)
+	RegisterViaGoogle(ctx context.Context, reqDto *dtos.RegisterViaGoogleReqDto) (*dtos.RegisterViaGoogleResDto, *exceptions.Exception)
+	Login(ctx context.Context, reqDto *dtos.LoginReqDto) (*dtos.LoginResDto, *exceptions.Exception)
+	LoginViaGoogle(ctx context.Context, reqDto *dtos.LoginViaGoogleReqDto) (*dtos.LoginViaGoogleResDto, *exceptions.Exception)
+	Logout(ctx context.Context, reqDto *dtos.LogoutReqDto) (*dtos.LogoutResDto, *exceptions.Exception)
+	SendAuthCode(ctx context.Context, reqDto *dtos.SendAuthCodeReqDto) (*dtos.SendAuthCodeResDto, *exceptions.Exception)
+	ValidateEmail(ctx context.Context, reqDto *dtos.ValidateEmailReqDto) (*dtos.ValidateEmailResDto, *exceptions.Exception)
+	ResetEmail(ctx context.Context, reqDto *dtos.ResetEmailReqDto) (*dtos.ResetEmailResDto, *exceptions.Exception)
+	ForgetPassword(ctx context.Context, reqDto *dtos.ForgetPasswordReqDto) (*dtos.ForgetPasswordResDto, *exceptions.Exception)
+	ResetMe(ctx context.Context, reqDto *dtos.ResetMeReqDto) (*dtos.ResetMeResDto, *exceptions.Exception)
+	DeleteMe(ctx context.Context, reqDto *dtos.DeleteMeReqDto) (*dtos.DeleteMeResDto, *exceptions.Exception)
+}
+
+type AuthService struct {
+	db                    *gorm.DB
+	userRepository        repositories.UserRepositoryInterface
+	userInfoRepository    repositories.UserInfoRepositoryInterface
+	userAccountRepository repositories.UserAccountRepositoryInterface
+	userSettingRepository repositories.UserSettingRepositoryInterface
+	oauthService          OAuthServiceInterface
+}
+
+func NewAuthService(
+	db *gorm.DB,
+	userRepository repositories.UserRepositoryInterface,
+	userInfoRepository repositories.UserInfoRepositoryInterface,
+	userAccountRepository repositories.UserAccountRepositoryInterface,
+	userSettingRepository repositories.UserSettingRepositoryInterface,
+	oauthService OAuthServiceInterface,
+) AuthServiceInterface {
+	if db == nil {
+		db = models.DB
+	}
+	return &AuthService{
+		db:                    db,
+		userRepository:        userRepository,
+		userInfoRepository:    userInfoRepository,
+		userAccountRepository: userAccountRepository,
+		userSettingRepository: userSettingRepository,
+		oauthService:          oauthService,
+	}
+}
+
+/* ============================== Auxiliary Functions ============================== */
+
+func (s *AuthService) hashPassword(password string) (string, *exceptions.Exception) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", exceptions.Util.FailedToGenerateHashValue().WithOrigin(err)
+	}
+	return string(bytes), nil
+}
+
+func (s *AuthService) checkPasswordHash(hashedPassword string, password string) bool {
+	return (bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))) == nil
+}
+
+func (s *AuthService) getOAuthFakeName() (string, *exceptions.Exception) {
+	reg, err := regexp.Compile("[^a-z0-9]+")
+	if err != nil {
+		return "", exceptions.Auth.FailedToCompileRegularExpression().WithOrigin(err)
+	}
+	fakeName := strings.ToLower(uuid.New().String())
+	fakeName = reg.ReplaceAllString(fakeName, "")
+	if len(fakeName) < 6 {
+		fakeName = fakeName + util.GenerateRepeatableSnowflakeID()
+	}
+	return fakeName, nil
+}
+
+func (s *AuthService) getOAuthFakePassword() (string, *exceptions.Exception) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(uuid.New().String()), bcrypt.DefaultCost)
+	if err != nil {
+		return "", exceptions.Util.FailedToGenerateHashValue().WithOrigin(err)
+	}
+	return string(bytes), nil
+}
+
+/* ============================== Service Methods for Authentication ============================== */
+
+func (s *AuthService) Register(
+	ctx context.Context, reqDto *dtos.RegisterReqDto,
+) (*dtos.RegisterResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.Auth.InvalidDto().WithOrigin(err)
+	}
+
+	// put the hash part outside the transaction to decrease its blocking time from heavily hashing operation
+	hashedPassword, exception := s.hashPassword(reqDto.Body.Password)
+	if exception != nil {
+		return nil, exception
+	}
+
+	tx := s.db.WithContext(ctx).Begin()
+
+	createUserInput := inputs.CreateUserInput{
+		Name:        reqDto.Body.Name,
+		DisplayName: util.GenerateRandomFakeDisplayName(), // we generate a default display name for the new user
+		Email:       reqDto.Body.Email,
+		Password:    hashedPassword,
+		UserAgent:   reqDto.Header.UserAgent,
+	}
+	newUserId, exception := s.userRepository.CreateOne(
+		createUserInput,
+		options.WithTransactionDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	newAccessToken, exception := tokens.GenerateAccessToken(
+		createUserInput.Name,
+		createUserInput.Email,
+		createUserInput.UserAgent,
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+	newRefreshToken, exception := tokens.GenerateRefreshToken(
+		createUserInput.Name,
+		createUserInput.Email,
+		createUserInput.UserAgent,
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+	newCSRFToken, exception := tokens.GenerateCSRFToken()
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	authCode := util.GenerateAuthCode()
+	authCodeExpiredAt := time.Now().Add(constants.ExpirationTimeOfAuthCode)
+
+	newUser, exception := s.userRepository.UpdateOneById(
+		*newUserId,
+		inputs.PartialUpdateUserInput{
+			Values: inputs.UpdateUserInput{
+				RefreshToken: newRefreshToken,
+			},
+			SetNull: nil,
+		},
+		options.WithTransactionDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	_, exception = s.userInfoRepository.CreateOneByUserId(
+		*newUserId,
+		inputs.CreateUserInfoInput{},
+		options.WithTransactionDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	_, exception = s.userAccountRepository.CreateOneByUserId(
+		*newUserId,
+		inputs.CreateUserAccountInput{
+			AuthCode:          authCode,
+			AuthCodeExpiredAt: authCodeExpiredAt,
+		},
+		options.WithTransactionDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	_, exception = s.userSettingRepository.CreateOneByUserId(
+		*newUserId,
+		inputs.CreateUserSettingInput{},
+		options.WithTransactionDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.User.FailedToCommitTransaction().WithOrigin(err)
+	}
+
+	exception = caches.SetUserDataCache(
+		newUser.Name,
+		caches.UserDataCache{
+			Id:                 *newUserId,
+			PublicId:           newUser.PublicId,
+			Name:               newUser.Name,
+			DisplayName:        newUser.DisplayName,
+			Email:              newUser.Email,
+			AccessToken:        *newAccessToken,
+			CSRFToken:          *newCSRFToken,
+			Role:               newUser.Role,
+			Plan:               newUser.Plan,
+			Status:             newUser.Status,
+			AvatarURL:          "",
+			Language:           enums.Language_English,
+			GeneralSettingCode: 0,
+			PrivacySettingCode: 0,
+			CreatedAt:          newUser.CreatedAt,
+			UpdatedAt:          newUser.UpdatedAt,
+		},
+	)
+	if exception != nil {
+		exception.Log()
+	}
+
+	if exception = emails.AsyncSendWelcomeEmail(
+		newUser.Email,
+		newUser.Name,
+		newUser.Status.String(),
+	); exception != nil {
+		exception.Log()
+	}
+
+	return &dtos.RegisterResDto{
+		PublicId:     newUser.PublicId,
+		Name:         newUser.Name,
+		DisplayName:  newUser.DisplayName,
+		Email:        newUser.Email,
+		AccessToken:  *newAccessToken,
+		RefreshToken: *newRefreshToken,
+		CSRFToken:    *newCSRFToken,
+		CreatedAt:    newUser.CreatedAt,
+	}, nil
+}
+
+func (s *AuthService) RegisterViaGoogle(
+	ctx context.Context, reqDto *dtos.RegisterViaGoogleReqDto,
+) (*dtos.RegisterViaGoogleResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.Auth.InvalidDto().WithOrigin(err)
+	}
+
+	userInfo, exception := s.oauthService.GetGoogleUserInfo(ctx, reqDto.Body.AuthorizationCode)
+	if exception != nil {
+		return nil, exception
+	}
+
+	fakePassword, exception := s.getOAuthFakePassword()
+	if exception != nil {
+		return nil, exception
+	}
+	hashedPassword, exception := s.hashPassword(fakePassword)
+	if exception != nil {
+		return nil, exception
+	}
+
+	tx := s.db.WithContext(ctx).Begin()
+
+	// try to generate fake name at most 5 times
+	var newUserId *uuid.UUID
+	createUserInput := inputs.CreateUserInput{
+		Name:        "",
+		DisplayName: util.GenerateRandomFakeDisplayName(), // we generate a default display name for the new user
+		Email:       userInfo.Email,
+		Password:    hashedPassword,
+		UserAgent:   reqDto.Header.UserAgent,
+	}
+	for i := 0; i < constants.MaxRetriesOfGeneratingFakeName; i++ {
+		fakeName, exception := s.getOAuthFakeName()
+		if exception != nil {
+			tx.Rollback()
+			return nil, exception
+		}
+
+		if len(fakeName) > constants.MaxNameLength {
+			fakeName = fakeName[:constants.MaxNameLength]
+		}
+		createUserInput.Name = fakeName
+
+		newUserId, exception = s.userRepository.CreateOne(
+			createUserInput,
+			options.WithTransactionDB(tx),
+		)
+		if exception == nil {
+			break
+		}
+	}
+	if newUserId == nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	newAccessToken, exception := tokens.GenerateAccessToken(
+		createUserInput.Name,
+		createUserInput.Email,
+		createUserInput.UserAgent,
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+	newRefreshToken, exception := tokens.GenerateRefreshToken(
+		createUserInput.Name,
+		createUserInput.Email,
+		createUserInput.UserAgent,
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+	newCSRFToken, exception := tokens.GenerateCSRFToken()
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	authCode := util.GenerateAuthCode()
+	authCodeExpiredAt := time.Now().Add(constants.ExpirationTimeOfAuthCode)
+
+	newUser, exception := s.userRepository.UpdateOneById(
+		*newUserId,
+		inputs.PartialUpdateUserInput{
+			Values: inputs.UpdateUserInput{
+				RefreshToken: newRefreshToken,
+			},
+			SetNull: nil,
+		},
+		options.WithTransactionDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	_, exception = s.userInfoRepository.CreateOneByUserId(
+		*newUserId,
+		inputs.CreateUserInfoInput{},
+		options.WithTransactionDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	_, exception = s.userAccountRepository.CreateOneByUserId(
+		*newUserId,
+		inputs.CreateUserAccountInput{
+			AuthCode:          authCode,
+			AuthCodeExpiredAt: authCodeExpiredAt,
+			GoogleCredential:  &userInfo.Id,
+		},
+		options.WithTransactionDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	_, exception = s.userSettingRepository.CreateOneByUserId(
+		*newUserId,
+		inputs.CreateUserSettingInput{},
+		options.WithTransactionDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	exception = caches.SetUserDataCache(
+		newUser.Name,
+		caches.UserDataCache{
+			Id:                 *newUserId,
+			PublicId:           newUser.PublicId,
+			Name:               newUser.Name,
+			DisplayName:        newUser.DisplayName,
+			Email:              newUser.Email,
+			AccessToken:        *newAccessToken,
+			CSRFToken:          *newCSRFToken,
+			Role:               newUser.Role,
+			Plan:               newUser.Plan,
+			Status:             newUser.Status,
+			AvatarURL:          "",
+			Language:           enums.Language_English,
+			GeneralSettingCode: 0,
+			PrivacySettingCode: 0,
+			CreatedAt:          newUser.CreatedAt,
+			UpdatedAt:          newUser.UpdatedAt,
+		},
+	)
+	if exception != nil {
+		exception.Log()
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.User.FailedToCommitTransaction().WithOrigin(err)
+	}
+
+	// send the welcome email to the registered user
+	if exception = emails.AsyncSendWelcomeEmail(
+		newUser.Email,
+		newUser.Name,
+		newUser.Status.String(),
+	); exception != nil {
+		exception.Log()
+	}
+
+	return &dtos.RegisterViaGoogleResDto{
+		PublicId:     newUser.PublicId,
+		Name:         newUser.Name,
+		DisplayName:  newUser.DisplayName,
+		Email:        newUser.Email,
+		AccessToken:  *newAccessToken,
+		RefreshToken: *newRefreshToken,
+		CSRFToken:    *newCSRFToken,
+		CreatedAt:    newUser.CreatedAt,
+	}, nil
+}
+
+func (s *AuthService) Login(
+	ctx context.Context, reqDto *dtos.LoginReqDto,
+) (*dtos.LoginResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.User.InvalidInput().WithOrigin(err)
+	}
+
+	tx := s.db.WithContext(ctx).Begin()
+
+	// otherwise, the user should provide their account and password
+	var user *schemas.User = nil
+	var exception *exceptions.Exception = nil
+	if util.IsAlphaAndNumberString(reqDto.Body.Account) { // if the account field contains user name
+		if user, exception = s.userRepository.GetOneByName(
+			reqDto.Body.Account,
+			nil,
+			options.WithTransactionDB(tx),
+		); exception != nil {
+			tx.Rollback()
+			return nil, exception
+		}
+	} else if util.IsEmailString(reqDto.Body.Account) { // if the account field contains email
+		if user, exception = s.userRepository.GetOneByEmail(
+			reqDto.Body.Account,
+			nil,
+			options.WithTransactionDB(tx),
+		); exception != nil {
+			tx.Rollback()
+			return nil, exception
+		}
+	} else {
+		tx.Rollback()
+		return nil, exceptions.Auth.InvalidDto()
+	}
+
+	if user == nil {
+		tx.Rollback()
+		return nil, exceptions.Auth.InvalidDto()
+	}
+
+	if user.BlockLoginUntil.After(time.Now()) {
+		tx.Rollback()
+		return nil, exceptions.Auth.LoginBlockedDueToTryingTooManyTimes(user.BlockLoginUntil)
+	}
+
+	if !s.checkPasswordHash(user.Password, reqDto.Body.Password) {
+		newLoginCount := user.LoginCount + 1
+		blockLoginUntil, exception := util.GetLoginBlockedUntilByLoginCount(newLoginCount)
+		if exception != nil {
+			tx.Rollback()
+			return nil, exception
+		}
+
+		_, exception = s.userRepository.UpdateOneById(
+			user.Id,
+			inputs.PartialUpdateUserInput{
+				Values: inputs.UpdateUserInput{
+					LoginCount:     &newLoginCount,
+					BlockLoginUtil: blockLoginUntil,
+				},
+				SetNull: nil,
+			},
+			options.WithTransactionDB(tx),
+		)
+		if exception != nil {
+			tx.Rollback()
+			return nil, exception
+		}
+
+		if blockLoginUntil != nil {
+			tx.Rollback()
+			return nil, exceptions.Auth.LoginBlockedDueToTryingTooManyTimes(*blockLoginUntil)
+		}
+
+		tx.Rollback()
+		return nil, exceptions.Auth.WrongPassword() // login procedure early ends here
+	}
+
+	if user.UserAgent != reqDto.Header.UserAgent {
+		// send a security email to warn the user
+		if exception := emails.AsyncSendSecurityAlertEmail(
+			user.Email,
+			user.Name,
+			user.Status.String(),
+			"Login in Different Place",
+			"Your account has a recent login action in other place",
+			time.Now(),
+			"",
+		); exception != nil {
+			exception.Log()
+		}
+	}
+
+	newAccessToken, exception := tokens.GenerateAccessToken(user.Name, user.Email, user.UserAgent)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+	newRefreshToken, exception := tokens.GenerateRefreshToken(user.Name, user.Email, user.UserAgent)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+	newCSRFToken, exception := tokens.GenerateCSRFToken()
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	// check if the user data cache exists
+	if _, exception := caches.GetUserDataCache(user.Name); exception == nil {
+		// then just update the existing user data cache
+		if exception = caches.UpdateUserDataCache(
+			user.Name,
+			caches.UpdateUserDataCacheDto{
+				AccessToken: newAccessToken,
+				CSRFToken:   newCSRFToken,
+			},
+		); exception != nil {
+			exception.Log()
+		}
+	} else { // else if it does not exist
+		// then we have to first get the relative data from different tables
+		// we done this by one custom sql so it's not that slow...
+		// once we have the required data, we set it as the user data cache
+		output := struct {
+			Id                 uuid.UUID        `gorm:"id"`
+			PublicId           string           `gorm:"public_id"`
+			Name               string           `gorm:"name"`
+			DisplayName        string           `gorm:"display_name"`
+			Email              string           `gorm:"email"`
+			Role               enums.UserRole   `gorm:"role"`
+			Plan               enums.UserPlan   `gorm:"plan"`
+			Status             enums.UserStatus `gorm:"status"`
+			AvatarURL          *string          `gorm:"avatar_url"`
+			Language           enums.Language   `gorm:"language"`
+			GeneralSettingCode int64            `gorm:"general_setting_code"`
+			PrivacySettingCode int64            `gorm:"privacy_setting_code"`
+			CreatedAt          time.Time        `gorm:"created_at"`
+			UpdatedAt          time.Time        `gorm:"updated_at"`
+		}{}
+		err := tx.Raw(usersql.GetUserDataCacheByIdSQL, user.Id).
+			Row().
+			Scan(
+				&output.Id,
+				&output.PublicId,
+				&output.Name,
+				&output.DisplayName,
+				&output.Email,
+				&output.Role,
+				&output.Plan,
+				&output.Status,
+				&output.AvatarURL,
+				&output.Language,
+				&output.GeneralSettingCode,
+				&output.PrivacySettingCode,
+				&output.CreatedAt,
+				&output.UpdatedAt,
+			)
+		if err != nil {
+			tx.Rollback()
+			return nil, exceptions.User.NotFound().WithOrigin(err)
+		}
+
+		newUserDataCache := caches.UserDataCache{
+			Id:                 user.Id,
+			PublicId:           output.PublicId,
+			Name:               output.Name,
+			DisplayName:        output.DisplayName,
+			Email:              output.Email,
+			AccessToken:        *newAccessToken,
+			CSRFToken:          *newCSRFToken,
+			Role:               output.Role,
+			Plan:               output.Plan,
+			Status:             output.Status,
+			AvatarURL:          "",
+			Language:           output.Language,
+			GeneralSettingCode: output.GeneralSettingCode,
+			PrivacySettingCode: output.PrivacySettingCode,
+			CreatedAt:          output.CreatedAt,
+			UpdatedAt:          output.UpdatedAt,
+		}
+		if output.AvatarURL != nil {
+			newUserDataCache.AvatarURL = *output.AvatarURL
+		}
+		exception := caches.SetUserDataCache(
+			user.Name,
+			newUserDataCache,
+		)
+		if exception != nil {
+			tx.Rollback()
+			return nil, exception.Log()
+		}
+	}
+
+	// update the refresh token and the status of the user
+	var zeroLoginCount int32 = 0 // reset the login count if the login procedure is valid
+	updatedUser, exception := s.userRepository.UpdateOneById(
+		user.Id,
+		inputs.PartialUpdateUserInput{
+			Values: inputs.UpdateUserInput{
+				Status:       &user.PrevStatus,
+				RefreshToken: newRefreshToken,
+				UserAgent:    &reqDto.Header.UserAgent,
+				LoginCount:   &zeroLoginCount,
+			},
+			SetNull: nil,
+		},
+		options.WithTransactionDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.User.FailedToCommitTransaction().WithOrigin(err)
+	}
+
+	return &dtos.LoginResDto{
+		PublicId:     user.PublicId,
+		Name:         user.Name,
+		DisplayName:  user.DisplayName,
+		Email:        user.Email,
+		AccessToken:  *newAccessToken,
+		RefreshToken: updatedUser.RefreshToken,
+		CSRFToken:    *newCSRFToken,
+		UpdatedAt:    updatedUser.UpdatedAt,
+		CreatedAt:    user.CreatedAt,
+	}, nil
+}
+
+func (s *AuthService) LoginViaGoogle(
+	ctx context.Context, reqDto *dtos.LoginViaGoogleReqDto,
+) (*dtos.LoginViaGoogleResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.Auth.InvalidDto().WithOrigin(err)
+	}
+
+	userInfo, exception := s.oauthService.GetGoogleUserInfo(ctx, reqDto.Body.AuthorizationCode)
+	if exception != nil {
+		return nil, exception
+	}
+
+	tx := s.db.WithContext(ctx).Begin()
+
+	// otherwise, the user should provide their account and password
+	var user *schemas.User = nil
+	if user, exception = s.userRepository.GetOneByEmail(
+		userInfo.Email,
+		[]schemas.UserRelation{schemas.UserRelation_UserAccount},
+		options.WithTransactionDB(tx),
+	); exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	if user == nil {
+		tx.Rollback()
+		return nil, exceptions.Auth.InvalidDto()
+	}
+
+	if user.BlockLoginUntil.After(time.Now()) {
+		tx.Rollback()
+		return nil, exceptions.Auth.LoginBlockedDueToTryingTooManyTimes(user.BlockLoginUntil)
+	}
+
+	if user.UserAccount.GoogleCredential == nil || userInfo.Id != *user.UserAccount.GoogleCredential {
+		newLoginCount := user.LoginCount + 1
+		blockLoginUntil, exception := util.GetLoginBlockedUntilByLoginCount(newLoginCount)
+		if exception != nil {
+			tx.Rollback()
+			return nil, exception
+		}
+
+		_, exception = s.userRepository.UpdateOneById(
+			user.Id,
+			inputs.PartialUpdateUserInput{
+				Values: inputs.UpdateUserInput{
+					LoginCount:     &newLoginCount,
+					BlockLoginUtil: blockLoginUntil,
+				},
+				SetNull: nil,
+			},
+			options.WithTransactionDB(tx),
+		)
+		if exception != nil {
+			tx.Rollback()
+			return nil, exception
+		}
+
+		if blockLoginUntil != nil {
+			tx.Rollback()
+			return nil, exceptions.Auth.LoginBlockedDueToTryingTooManyTimes(*blockLoginUntil)
+		}
+
+		tx.Rollback()
+		return nil, exceptions.Auth.WrongPassword() // login via google procedure early ends here
+	}
+
+	if user.UserAgent != reqDto.Header.UserAgent {
+		// send a security email to warn the user
+		if exception := emails.AsyncSendSecurityAlertEmail(
+			user.Email,
+			user.Name,
+			user.Status.String(),
+			"Login in Different Place",
+			"Your account has a recent login action in other place",
+			time.Now(),
+			"",
+		); exception != nil {
+			exception.Log()
+		}
+	}
+
+	newAccessToken, exception := tokens.GenerateAccessToken(user.Name, user.Email, user.UserAgent)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+	newRefreshToken, exception := tokens.GenerateRefreshToken(user.Name, user.Email, user.UserAgent)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+	newCSRFToken, exception := tokens.GenerateCSRFToken()
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	// check if the user data cache exists
+	if _, exception := caches.GetUserDataCache(user.Name); exception == nil {
+		// then just update the existing user data cache
+		if exception = caches.UpdateUserDataCache(
+			user.Name,
+			caches.UpdateUserDataCacheDto{
+				AccessToken: newAccessToken,
+				CSRFToken:   newCSRFToken,
+			},
+		); exception != nil {
+			exception.Log()
+		}
+	} else { // else if it does not exist
+		// then we have to first get the relative data from different tables
+		// we done this by one custom sql so it's not that slow...
+		// once we have the required data, we set it as the user data cache
+		output := struct {
+			Id                 uuid.UUID        `gorm:"id"`
+			PublicId           string           `gorm:"public_id"`
+			Name               string           `gorm:"name"`
+			DisplayName        string           `gorm:"display_name"`
+			Email              string           `gorm:"email"`
+			Role               enums.UserRole   `gorm:"role"`
+			Plan               enums.UserPlan   `gorm:"plan"`
+			Status             enums.UserStatus `gorm:"status"`
+			AvatarURL          *string          `gorm:"avatar_url"`
+			Language           enums.Language   `gorm:"language"`
+			GeneralSettingCode int64            `gorm:"general_setting_code"`
+			PrivacySettingCode int64            `gorm:"privacy_setting_code"`
+			CreatedAt          time.Time        `gorm:"created_at"`
+			UpdatedAt          time.Time        `gorm:"updated_at"`
+		}{}
+		err := tx.Raw(usersql.GetUserDataCacheByIdSQL, user.Id).
+			Row().
+			Scan(
+				&output.Id,
+				&output.PublicId,
+				&output.Name,
+				&output.DisplayName,
+				&output.Email,
+				&output.Role,
+				&output.Plan,
+				&output.Status,
+				&output.AvatarURL,
+				&output.Language,
+				&output.GeneralSettingCode,
+				&output.PrivacySettingCode,
+				&output.CreatedAt,
+				&output.UpdatedAt,
+			)
+		if err != nil {
+			tx.Rollback()
+			return nil, exceptions.User.NotFound().WithOrigin(err)
+		}
+
+		newUserDataCache := caches.UserDataCache{
+			Id:                 user.Id,
+			PublicId:           output.PublicId,
+			Name:               output.Name,
+			DisplayName:        output.DisplayName,
+			Email:              output.Email,
+			AccessToken:        *newAccessToken,
+			CSRFToken:          *newCSRFToken,
+			Role:               output.Role,
+			Plan:               output.Plan,
+			Status:             output.Status,
+			AvatarURL:          "",
+			Language:           output.Language,
+			GeneralSettingCode: output.GeneralSettingCode,
+			PrivacySettingCode: output.PrivacySettingCode,
+			CreatedAt:          output.CreatedAt,
+			UpdatedAt:          output.UpdatedAt,
+		}
+		if output.AvatarURL != nil {
+			newUserDataCache.AvatarURL = *output.AvatarURL
+		}
+		exception := caches.SetUserDataCache(
+			user.Name,
+			newUserDataCache,
+		)
+		if exception != nil {
+			tx.Rollback()
+			return nil, exception.Log()
+		}
+	}
+
+	// update the refresh token and the status of the user
+	var zeroLoginCount int32 = 0 // reset the login count if the login procedure is valid
+	updatedUser, exception := s.userRepository.UpdateOneById(
+		user.Id,
+		inputs.PartialUpdateUserInput{
+			Values: inputs.UpdateUserInput{
+				Status:       &user.PrevStatus,
+				RefreshToken: newRefreshToken,
+				UserAgent:    &reqDto.Header.UserAgent,
+				LoginCount:   &zeroLoginCount,
+			},
+			SetNull: nil,
+		},
+		options.WithTransactionDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.User.FailedToCommitTransaction().WithOrigin(err)
+	}
+
+	return &dtos.LoginViaGoogleResDto{
+		PublicId:     user.PublicId,
+		Name:         user.Name,
+		DisplayName:  user.DisplayName,
+		Email:        user.Email,
+		AccessToken:  *newAccessToken,
+		RefreshToken: updatedUser.RefreshToken,
+		CSRFToken:    *newCSRFToken,
+		UpdatedAt:    updatedUser.UpdatedAt,
+		CreatedAt:    user.CreatedAt,
+	}, nil
+}
+
+func (s *AuthService) Logout(
+	ctx context.Context, reqDto *dtos.LogoutReqDto,
+) (*dtos.LogoutResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.Auth.InvalidDto().WithOrigin(err)
+	}
+
+	db := s.db.WithContext(ctx)
+
+	offlineStatus := enums.UserStatus_Offline
+	emptyString := ""
+	updatedUser, exception := s.userRepository.UpdateOneById(
+		reqDto.ContextFields.UserId,
+		inputs.PartialUpdateUserInput{
+			Values: inputs.UpdateUserInput{
+				Status:       &offlineStatus,
+				RefreshToken: &emptyString,
+			},
+			SetNull: nil,
+		},
+		options.WithDB(db),
+	)
+	if exception != nil {
+		return nil, exception
+	}
+
+	exception = caches.DeleteUserDataCache(reqDto.ContextFields.UserName)
+	if exception != nil {
+		return nil, exception
+	}
+
+	return &dtos.LogoutResDto{
+		UpdatedAt: updatedUser.UpdatedAt,
+	}, nil
+}
+
+func (s *AuthService) SendAuthCode(
+	ctx context.Context, reqDto *dtos.SendAuthCodeReqDto,
+) (*dtos.SendAuthCodeResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.User.InvalidInput().WithOrigin(err)
+	}
+
+	db := s.db.WithContext(ctx)
+
+	authCode := util.GenerateAuthCode()
+	authCodeExpiredAt := time.Now().Add(constants.ExpirationTimeOfAuthCode)
+	blockAuthCodeUntil := util.GetAuthCodeBlockUntil()
+	output := struct {
+		Name               string    `json:"name" gorm:"column:name;"`
+		UserAgent          string    `json:"userAgent" gorm:"column:user_agent;"`
+		BlockAuthCodeUntil time.Time `json:"blockAuthCodeUntil" gorm:"column:block_auth_code_until;"`
+		Now                time.Time `json:"now" gorm:"column:now;"`
+	}{}
+	err := db.Raw(authsql.UpdateAuthCodeSQL,
+		authCode, authCodeExpiredAt, blockAuthCodeUntil, reqDto.Body.Email,
+	).Row().
+		Scan(&output.Name, &output.UserAgent, &output.BlockAuthCodeUntil, &output.Now)
+	if err != nil {
+		return nil, exceptions.Auth.AuthCodeBlockedDueToTryingTooManyTimes(output.BlockAuthCodeUntil).WithOrigin(err)
+	}
+
+	if exception := emails.AsyncSendValidationEmail(
+		reqDto.Body.Email,
+		output.Name,
+		authCode,
+		output.UserAgent,
+		authCodeExpiredAt,
+	); exception != nil {
+		return nil, exception
+	}
+
+	return &dtos.SendAuthCodeResDto{
+		AuthCodeExpiredAt:  authCodeExpiredAt,
+		BlockAuthCodeUntil: blockAuthCodeUntil,
+		UpdatedAt:          time.Now(),
+	}, nil
+}
+
+func (s *AuthService) ValidateEmail(
+	ctx context.Context, reqDto *dtos.ValidateEmailReqDto,
+) (*dtos.ValidateEmailResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.User.InvalidInput().WithOrigin(err)
+	}
+
+	db := s.db.WithContext(ctx)
+
+	var updatedAt time.Time
+	err := db.Raw(authsql.ValidateEmailSQL, reqDto.ContextFields.UserId, reqDto.Body.AuthCode).
+		Row().
+		Scan(&updatedAt)
+	if err != nil {
+		return nil, exceptions.User.FailedToUpdate().WithOrigin(err)
+	}
+
+	return &dtos.ValidateEmailResDto{
+		UpdatedAt: updatedAt,
+	}, nil
+}
+
+func (s *AuthService) ResetEmail(
+	ctx context.Context, reqDto *dtos.ResetEmailReqDto,
+) (*dtos.ResetEmailResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.User.InvalidInput().WithOrigin(err)
+	}
+
+	tx := s.db.WithContext(ctx).Begin()
+
+	var updatedAt time.Time
+	err := tx.Raw(authsql.ResetEmailSQL, reqDto.Body.NewEmail, reqDto.Body.AuthCode, reqDto.ContextFields.UserId).
+		Row().
+		Scan(&updatedAt)
+	if err != nil {
+		tx.Rollback()
+		return nil, exceptions.User.FailedToUpdate().WithOrigin(err)
+	}
+
+	authCode := util.GenerateAuthCode()
+	authCodeExpiredAt := time.Now().Add(constants.ExpirationTimeOfAuthCode)
+	_, exception := s.userAccountRepository.UpdateOneByUserId(
+		reqDto.ContextFields.UserId,
+		inputs.PartialUpdateUserAccountInput{
+			Values: inputs.UpdateUserAccountInput{
+				AuthCode:          &authCode,
+				AuthCodeExpiredAt: &authCodeExpiredAt,
+			},
+			SetNull: nil,
+		},
+		options.WithTransactionDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.User.FailedToCommitTransaction().WithOrigin(err)
+	}
+
+	return &dtos.ResetEmailResDto{
+		UpdatedAt: updatedAt,
+	}, nil
+}
+
+func (s *AuthService) ForgetPassword(
+	ctx context.Context, reqDto *dtos.ForgetPasswordReqDto,
+) (*dtos.ForgetPasswordResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.User.InvalidInput().WithOrigin(err)
+	}
+
+	tx := s.db.WithContext(ctx).Begin()
+
+	var user *schemas.User = nil
+	var exception *exceptions.Exception = nil
+	var preloads = []schemas.UserRelation{schemas.UserRelation_UserAccount, schemas.UserRelation_UserInfo, schemas.UserRelation_UserSetting}
+	if util.IsEmailString(reqDto.Body.Account) { // if the account field contains email
+		if user, exception = s.userRepository.GetOneByEmail(
+			reqDto.Body.Account,
+			preloads,
+			options.WithTransactionDB(tx),
+		); exception != nil {
+			tx.Rollback()
+			return nil, exception
+		}
+	} else if util.IsAlphaAndNumberString(reqDto.Body.Account) { // if the account field contains user name
+		if user, exception = s.userRepository.GetOneByName(
+			reqDto.Body.Account,
+			preloads,
+			options.WithTransactionDB(tx),
+		); exception != nil {
+			tx.Rollback()
+			return nil, exception
+		}
+	} else {
+		tx.Rollback()
+		return nil, exceptions.Auth.InvalidDto()
+	}
+
+	if reqDto.Body.AuthCode != user.UserAccount.AuthCode {
+		tx.Rollback()
+		return nil, exceptions.Auth.WrongAuthCode()
+	}
+
+	newAccessToken, exception := tokens.GenerateAccessToken(user.Name, user.Email, user.UserAgent)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+	newRefreshToken, exception := tokens.GenerateRefreshToken(user.Name, user.Email, user.UserAgent)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+	newCSRFToken, exception := tokens.GenerateCSRFToken()
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	// update the access token of the user
+	exception = caches.UpdateUserDataCache(user.Name, caches.UpdateUserDataCacheDto{AccessToken: newAccessToken})
+	if exception != nil {
+		exception.Log() // if the cache does not exist the user, then just skip this update operation
+		// and also try to set the new user cache data
+		exception = caches.SetUserDataCache(user.Name, caches.UserDataCache{
+			Id:                 user.Id,
+			PublicId:           user.PublicId,
+			Name:               user.Name,
+			DisplayName:        user.DisplayName,
+			Email:              user.Email,
+			AccessToken:        *newAccessToken,
+			CSRFToken:          *newCSRFToken,
+			Role:               user.Role,
+			Plan:               user.Plan,
+			Status:             user.Status,
+			AvatarURL:          *user.UserInfo.AvatarURL,
+			Language:           user.UserSetting.Language,
+			GeneralSettingCode: user.UserSetting.GeneralSettingCode,
+			PrivacySettingCode: user.UserSetting.PrivacySettingCode,
+			CreatedAt:          user.CreatedAt,
+			UpdatedAt:          user.UpdatedAt,
+		})
+		if exception != nil {
+			exception.Log() // if the set operation also failed, then just log it without abort the following
+		}
+	}
+
+	hashedPassword, exception := s.hashPassword(reqDto.Body.NewPassword)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	// update the refresh token and the status of the user
+	var zeroLoginCount int32 = 0 // reset the login count if the login procedure is valid
+	updatedUser, exception := s.userRepository.UpdateOneById(
+		user.Id,
+		inputs.PartialUpdateUserInput{
+			Values: inputs.UpdateUserInput{
+				Password:     &hashedPassword,
+				RefreshToken: newRefreshToken,
+				UserAgent:    &reqDto.Header.UserAgent,
+				LoginCount:   &zeroLoginCount,
+			},
+			SetNull: nil,
+		},
+		options.WithTransactionDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.User.FailedToCommitTransaction().WithOrigin(err)
+	}
+
+	return &dtos.ForgetPasswordResDto{
+		UpdatedAt: updatedUser.UpdatedAt,
+	}, nil
+}
+
+func (s *AuthService) ResetMe(
+	ctx context.Context, reqDto *dtos.ResetMeReqDto,
+) (*dtos.ResetMeResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.User.InvalidInput().WithOrigin(err)
+	}
+
+	tx := s.db.WithContext(ctx).Begin()
+
+	// Instead of deleting the user, we recreate their relative data in the database
+	// and make sure not to update the access token and refresh token, and csrf token in the reset logic
+	// Note that the user will not logged out after the reset operation
+
+	// try to retrieve the target user to reset and validate his/her auth code first
+	var resetUserAccount schemas.UserAccount
+	result := tx.Model(&resetUserAccount).
+		Where("user_id = ? AND auth_code = ?", reqDto.ContextFields.UserId, reqDto.Body.AuthCode).
+		First(&resetUserAccount)
+	if err := result.Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.UserAccount.NotFound().WithOrigin(err)
+	}
+
+	// delete the user info
+	if err := tx.Where("user_id = ?", reqDto.ContextFields.UserId).Delete(&schemas.UserInfo{}).Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.UserInfo.FailedToDelete().WithOrigin(err)
+	}
+	// and then re-create a new user info
+	if _, exception := s.userInfoRepository.CreateOneByUserId(
+		resetUserAccount.UserId,
+		inputs.CreateUserInfoInput{},
+		options.WithTransactionDB(tx),
+	); exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	// delete the user setting
+	if err := tx.Where("user_id = ?", reqDto.ContextFields.UserId).Delete(&schemas.UserSetting{}).Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.UserSetting.FailedToDelete().WithOrigin(err)
+	}
+	// and then re-create a new user setting
+	if _, exception := s.userSettingRepository.CreateOneByUserId(
+		resetUserAccount.UserId,
+		inputs.CreateUserSettingInput{},
+		options.WithTransactionDB(tx),
+	); exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	// delete other stuff in the future...
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.User.FailedToCommitTransaction().WithDetails(err)
+	}
+
+	return &dtos.ResetMeResDto{
+		UpdatedAt: time.Now(),
+	}, nil
+}
+
+func (s *AuthService) DeleteMe(
+	ctx context.Context, reqDto *dtos.DeleteMeReqDto,
+) (*dtos.DeleteMeResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.User.InvalidInput().WithOrigin(err)
+	}
+
+	db := s.db.WithContext(ctx)
+
+	if err := db.Exec(authsql.DeleteMeSQL, reqDto.ContextFields.UserId, reqDto.Body.AuthCode).Error; err != nil {
+		return nil, exceptions.User.FailedToDelete().WithOrigin(err)
+	}
+
+	exception := caches.DeleteUserDataCache(reqDto.ContextFields.UserName)
+	if exception != nil {
+		exception.Log()
+	}
+
+	return &dtos.DeleteMeResDto{
+		DeletedAt: time.Now(),
+	}, nil
+}
+
+func (s *AuthService) RegisterViaMeta() {}
+
+func (s *AuthService) RegisterViaGithub() {}
+
+func (s *AuthService) LoginViaMeta() {}
+
+func (s *AuthService) LoginViaGithub() {}

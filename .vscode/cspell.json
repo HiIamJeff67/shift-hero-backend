@@ -1,0 +1,35 @@
+{
+  "version": "0.2",
+  "language": "en,go",
+  "dictionaries": ["go", "sql", "lua", "gql"],
+  "enabled": true,
+  "ignoreRegExpList": [
+    "/[nN][oO][tT][eE][zZ][yY][a-zA-Z]*/",
+    "/go[a-zA-Z]*/",
+    "/gorm/",
+    "/gin/",
+    "/gin-[a-zA-Z]*/",
+    "/[a-zA-Z0-9]*sql/",
+    "/otl[a-zA-Z]*/"
+  ],
+  "words": [
+    "hotreload",
+    "gin",
+    "gorm",
+    "dtos",
+    "NANP",
+    "timestamptz",
+    "dbname",
+    "sslmode",
+    "searchcursor",
+    "responsewriter",
+    "gqlmodels",
+    "gqlgen",
+    "gqlparser",
+    "datatypes",
+    "omitnil",
+    "otelcol",
+    "mutatable",
+    "accessable"
+  ]
+}

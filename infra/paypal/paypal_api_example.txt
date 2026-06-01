@@ -1,0 +1,25 @@
+{
+  "id": "WH-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "create_time": "2023-10-01T12:00:00Z",
+  "resource_type": "sale",
+  "event_version": "1.0",
+  "event_type": "PAYMENT.SALE.COMPLETED",
+  "summary": "Payment completed for subscription",
+  "resource": {
+    "id": "XXXXXXXXXXXXXXXXX",
+    "status": "COMPLETED",
+    "amount": {
+      "currency_code": "USD",
+      "value": "10.00"
+    },
+    "create_time": "2023-10-01T12:00:00Z",
+    "update_time": "2023-10-01T12:00:00Z",
+    "links": [
+      {
+        "href": "https://api.paypal.com/v2/payments/captures/XXXXXXXXXXXXXXXXX",
+        "rel": "self",
+        "method": "GET"
+      }
+    ]
+  }
+}

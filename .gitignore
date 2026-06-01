@@ -1,0 +1,12 @@
+.env
+
+*.temp
+temp/**.*
+tmp/**.*
+
+.gocache/
+
+# docs/**
+
+.DS_Store
+*.pem

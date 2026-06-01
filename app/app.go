@@ -1,0 +1,134 @@
+package app
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/fvbock/endless"
+	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
+
+	caches "github.com/your-org/go-start-monolithic-kit/app/caches"
+	configs "github.com/your-org/go-start-monolithic-kit/app/configs"
+	models "github.com/your-org/go-start-monolithic-kit/app/models"
+	developmentroutes "github.com/your-org/go-start-monolithic-kit/app/routes/developmentroutes"
+	util "github.com/your-org/go-start-monolithic-kit/app/util"
+	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
+)
+
+func StartApplication() {
+	models.DB = models.ConnectToDatabase(configs.PostgresDatabaseConfig)
+	defer models.DisconnectToDatabase(models.DB)
+
+	caches.ConnectToAllRedis()
+	defer caches.DisconnectToAllRedis()
+	reloadRedisLibraries()
+
+	ctx := context.Background()
+	shutdown, err := initOTel(ctx)
+	if err != nil {
+		fmt.Println("Failed to initialize OpenTelemetry: ", err)
+		return
+	}
+	defer shutdown()
+
+	developmentroutes.DevelopmentRouter = gin.Default()
+	proxies := strings.Split(util.GetEnv("GIN_TRUSTED_PROXIES", ""), ",")
+	if err := developmentroutes.DevelopmentRouter.SetTrustedProxies(proxies); err != nil {
+		fmt.Println("Failed to set trusted proxies for router: ", err)
+		return
+	}
+	developmentroutes.ConfigureDevelopmentRoutes()
+	ginAddr := util.GetEnv("GIN_DOMAIN", "") + ":" + util.GetEnv("GIN_PORT", "7777")
+	if err := endless.ListenAndServe(ginAddr, developmentroutes.DevelopmentRouter); err != nil {
+		fmt.Println("Failed to connect to the server")
+		return
+	}
+}
+
+func reloadRedisLibraries() {
+	if exception := caches.FlushCacheLibraries(); exception != nil {
+		exception.Log()
+	}
+	if exception := caches.LoadRateLimitRecordCacheLibraries(); exception != nil {
+		exception.Log()
+	}
+	if exception := caches.LoadUserQuotaCacheLibraries(); exception != nil {
+		exception.Log()
+	}
+	// reload other more redis libraries here...
+}
+
+func initOTel(ctx context.Context) (func(), error) {
+	response, _ := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceName(constants.ServiceName),
+			semconv.ServiceVersion(constants.DevelopmentCompleteVersion),
+		),
+	)
+
+	traceExporter, _ := otlptracegrpc.New(
+		ctx,
+		otlptracegrpc.WithEndpoint(
+			util.GetEnv("DOCKER_OTEL_COLLECTOR_SERVICE_NAME", "go-start-monolithic-kit-otel-collector")+
+				":"+
+				util.GetEnv("DOCKER_OTEL_COLLECTOR_GRPC_PORT", "4317"),
+		),
+		otlptracegrpc.WithInsecure(),
+	)
+	traceProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(traceExporter),
+		sdktrace.WithResource(response),
+	)
+	otel.SetTracerProvider(traceProvider)
+
+	metricExporter, _ := otlpmetricgrpc.New(
+		ctx,
+		otlpmetricgrpc.WithEndpoint(
+			util.GetEnv("DOCKER_OTEL_COLLECTOR_SERVICE_NAME", "go-start-monolithic-kit-otel-collector")+
+				":"+
+				util.GetEnv("DOCKER_OTEL_COLLECTOR_GRPC_PORT", "4317"),
+		),
+		otlpmetricgrpc.WithInsecure(),
+	)
+	meterProvider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(
+			sdkmetric.NewPeriodicReader(
+				metricExporter,
+				sdkmetric.WithInterval(15*time.Second),
+			),
+		),
+		sdkmetric.WithResource(response),
+	)
+	otel.SetMeterProvider(meterProvider)
+
+	logExporter, _ := otlploggrpc.New(
+		ctx,
+		otlploggrpc.WithEndpoint(
+			util.GetEnv("DOCKER_OTEL_COLLECTOR_SERVICE_NAME", "go-start-monolithic-kit-otel-collector")+
+				":"+
+				util.GetEnv("DOCKER_OTEL_COLLECTOR_GRPC_PORT", "4317"),
+		),
+		otlploggrpc.WithInsecure(),
+	)
+	logProvider := sdklog.NewLoggerProvider(
+		sdklog.WithProcessor(sdklog.NewBatchProcessor(logExporter)),
+		sdklog.WithResource(response),
+	)
+
+	return func() {
+		traceProvider.Shutdown(ctx)
+		meterProvider.Shutdown(ctx)
+		logProvider.Shutdown(ctx)
+	}, nil
+}

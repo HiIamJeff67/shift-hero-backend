@@ -1,0 +1,234 @@
+services:
+  go-start-monolithic-kit-redis:
+    container_name: ${DOCKER_REDIS_SERVICE_NAME}
+    # restart: always
+    image: redis:7.2.3-alpine
+    ports:
+      - "${REDIS_PORT}:${DOCKER_REDIS_PORT}"
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      go-start-monolithic-kit-net:
+        ipv4_address: 172.30.0.13
+    volumes:
+      - redis-data:/data
+
+  go-start-monolithic-kit-db:
+    # should be the same as DB_HOST(hosting service)
+    container_name: ${DOCKER_DB_SERVICE_NAME}
+    # restart: always
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:${DOCKER_DB_PORT}"
+    networks:
+      go-start-monolithic-kit-net:
+        ipv4_address: 172.30.0.12
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  go-start-monolithic-kit-api:
+    container_name: ${DOCKER_API_SERVICE_NAME}
+    image: ${DOCKER_API_SERVICE_NAME}:latest
+    # restart: always
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.dev
+    networks:
+      go-start-monolithic-kit-net:
+        ipv4_address: 172.30.0.11
+    volumes:
+      - .:/go-start-monolithic-kit
+      - /go-start-monolithic-kit/tmp
+    # entrypoint: ["${ENTRYPOINT_CMD}"]
+    # env_file: .env # this will allowed all the environment variables from .env file be callable in our backend codespace
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_PORT: ${DOCKER_DB_PORT}
+      GIN_DOMAIN: ${GIN_DOMAIN}
+      GIN_PORT: ${DOCKER_GIN_PORT}
+      GIN_TRUSTED_PROXIES: ${GIN_TRUSTED_PROXIES}
+      JWT_ACCESS_TOKEN_SECRET_KEY: ${JWT_ACCESS_TOKEN_SECRET_KEY}
+      JWT_REFRESH_TOKEN_SECRET_KEY: ${JWT_REFRESH_TOKEN_SECRET_KEY}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      APP_OFFICIAL_NAME: ${APP_OFFICIAL_NAME}
+      APP_OFFICIAL_GMAIL: ${APP_OFFICIAL_GMAIL}
+      APP_OFFICIAL_GOOGLE_PASSWORD: ${APP_OFFICIAL_GOOGLE_PASSWORD}
+      APP_OFFICIAL_GOOGLE_APPLICATION_PASSWORD: ${APP_OFFICIAL_GOOGLE_APPLICATION_PASSWORD}
+      ALLOWED_DOMAINS: ${ALLOWED_DOMAINS}
+      OAUTH_GOOGLE_CLIENT_ID: ${OAUTH_GOOGLE_CLIENT_ID}
+      OAUTH_GOOGLE_CLIENT_SECRET: ${OAUTH_GOOGLE_CLIENT_SECRET}
+      OAUTH_GOOGLE_REDIRECT_URL: ${OAUTH_GOOGLE_REDIRECT_URL}
+    expose:
+      - "${GIN_PORT}"
+    depends_on:
+      go-start-monolithic-kit-db:
+        condition: service_healthy
+
+  go-start-monolithic-kit-nginx:
+    image: nginx:1.27-alpine
+    container_name: ${DOCKER_NGINX_SERVICE_NAME}
+    ports:
+      - "${NGINX_HTTP_PORT}:${DOCKER_NGINX_HTTP_PORT}"
+    networks:
+      go-start-monolithic-kit-net:
+        ipv4_address: 172.30.0.10
+    volumes:
+      - ./infra/nginx/default.dev.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - ${DOCKER_API_SERVICE_NAME}
+
+  go-start-monolithic-kit-loki:
+    container_name: ${DOCKER_LOKI_SERVICE_NAME}
+    image: grafana/loki:latest
+    command: ["-config.file=/etc/loki.yaml", "-config.expand-env=true"]
+    ports:
+      - "${LOKI_PORT}:${DOCKER_LOKI_PORT}"
+    environment:
+      DOCKER_LOKI_PORT: ${DOCKER_LOKI_PORT}
+    networks:
+      go-start-monolithic-kit-net:
+        ipv4_address: 172.30.0.14
+    volumes:
+      - ./infra/monitor/loki-config.dev.yaml:/etc/loki.yaml
+      - loki-data:/loki
+    # healthcheck:
+    #   test:
+    #     [
+    #       "CMD-SHELL",
+    #       "wget --no-verbose --tries=1 --spider http://localhost:${DOCKER_LOKI_PORT}/ready || exit 1",
+    #     ]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 12
+
+  go-start-monolithic-kit-tempo:
+    container_name: ${DOCKER_TEMPO_SERVICE_NAME}
+    image: grafana/tempo:2.9.1
+    command: ["-config.file=/etc/tempo.yaml", "-config.expand-env=true"]
+    environment:
+      DOCKER_TEMPO_PORT: ${DOCKER_TEMPO_PORT}
+      DOCKER_OTEL_COLLECTOR_GRPC_PORT: ${DOCKER_OTEL_COLLECTOR_GRPC_PORT}
+      DOCKER_OTEL_COLLECTOR_HTTP_PORT: ${DOCKER_OTEL_COLLECTOR_HTTP_PORT}
+      DOCKER_MIMIR_SERVICE_NAME: ${DOCKER_MIMIR_SERVICE_NAME}
+      DOCKER_MIMIR_PORT: ${DOCKER_MIMIR_PORT}
+    ports:
+      - "${TEMPO_PORT}:${DOCKER_TEMPO_PORT}"
+    networks:
+      go-start-monolithic-kit-net:
+        ipv4_address: 172.30.0.15
+    volumes:
+      - ./infra/monitor/tempo-config.dev.yaml:/etc/tempo.yaml
+      - tempo-data:/var/tempo
+    depends_on:
+      go-start-monolithic-kit-mimir:
+        condition: service_started
+
+  go-start-monolithic-kit-mimir:
+    container_name: ${DOCKER_MIMIR_SERVICE_NAME}
+    image: grafana/mimir:latest
+    command:
+      ["-config.file=/etc/mimir.yaml", "-target=all", "-config.expand-env=true"]
+    volumes:
+      - ./infra/monitor/mimir-config.dev.yaml:/etc/mimir.yaml
+      - mimir-data:/data/mimir
+    environment:
+      DOCKER_MIMIR_PORT: ${DOCKER_MIMIR_PORT}
+    ports:
+      - "${MIMIR_PORT}:${DOCKER_MIMIR_PORT}"
+    networks:
+      go-start-monolithic-kit-net:
+        ipv4_address: 172.30.0.16
+    # healthcheck:
+    #   test:
+    #     [
+    #       "CMD-SHELL",
+    #       "wget --no-verbose --tries=1 --spider http://localhost:${DOCKER_MIMIR_PORT}/ready || exit 1",
+    #     ]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 6
+    #   start_period: 30s
+
+  go-start-monolithic-kit-otel-collector:
+    container_name: ${DOCKER_OTEL_COLLECTOR_SERVICE_NAME}
+    image: otel/opentelemetry-collector-contrib:latest
+    environment:
+      DOCKER_LOKI_SERVICE_NAME: ${DOCKER_LOKI_SERVICE_NAME}
+      DOCKER_TEMPO_SERVICE_NAME: ${DOCKER_TEMPO_SERVICE_NAME}
+      DOCKER_MIMIR_SERVICE_NAME: ${DOCKER_MIMIR_SERVICE_NAME}
+      DOCKER_OTEL_COLLECTOR_GRPC_PORT: ${DOCKER_OTEL_COLLECTOR_GRPC_PORT}
+      DOCKER_OTEL_COLLECTOR_HTTP_PORT: ${DOCKER_OTEL_COLLECTOR_HTTP_PORT}
+    ports:
+      - "${OTEL_COLLECTOR_GRPC_PORT}:${DOCKER_OTEL_COLLECTOR_GRPC_PORT}" # OTLP gRPC
+      - "${OTEL_COLLECTOR_HTTP_PORT}:${DOCKER_OTEL_COLLECTOR_HTTP_PORT}" # OTLP HTTP
+    networks:
+      go-start-monolithic-kit-net:
+        ipv4_address: 172.30.0.17
+    volumes:
+      - ./infra/monitor/otel-collector-config.dev.yaml:/etc/otelcol-contrib/config.yaml
+    depends_on:
+      go-start-monolithic-kit-loki:
+        condition: service_started
+      go-start-monolithic-kit-mimir:
+        condition: service_started
+      go-start-monolithic-kit-tempo:
+        condition: service_started
+
+  go-start-monolithic-kit-grafana:
+    container_name: ${DOCKER_GRAFANA_SERVICE_NAME}
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+      GF_FEATURE_TOGGLE_ENABLE: ${GF_FEATURE_TOGGLE_ENABLE}
+      DOCKER_MIMIR_SERVICE_NAME: ${DOCKER_MIMIR_SERVICE_NAME}
+      DOCKER_MIMIR_PORT: ${DOCKER_MIMIR_PORT}
+      DOCKER_TEMPO_SERVICE_NAME: ${DOCKER_TEMPO_SERVICE_NAME}
+      DOCKER_TEMPO_PORT: ${DOCKER_TEMPO_PORT}
+      DOCKER_LOKI_SERVICE_NAME: ${DOCKER_LOKI_SERVICE_NAME}
+      DOCKER_LOKI_PORT: ${DOCKER_LOKI_PORT}
+    ports:
+      - "${GRAFANA_PORT}:${DOCKER_GRAFANA_PORT}"
+    networks:
+      go-start-monolithic-kit-net:
+        ipv4_address: 172.30.0.18
+    volumes:
+      - ./infra/monitor/grafana/datasources.dev.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    depends_on:
+      - go-start-monolithic-kit-loki
+      - go-start-monolithic-kit-tempo
+      - go-start-monolithic-kit-mimir
+
+networks:
+  go-start-monolithic-kit-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
+
+volumes:
+  redis-data:
+    name: go-start-monolithic-kit-redis-data
+  # api-data:
+  #   name: go-start-monolithic-kit-api-data
+  postgres-data:
+    name: go-start-monolithic-kit-postgres-data
+  postgres-test-data:
+    name: go-start-monolithic-kit-postgres-test-data
+  loki-data:
+    name: go-start-monolithic-kit-loki-data
+  tempo-data:
+    name: go-start-monolithic-kit-tempo-data
+  mimir-data:
+    name: go-start-monolithic-kit-mimir-data

@@ -1,0 +1,10 @@
+type PublicUser {
+  publicId: String!
+  name: String!
+  displayName: String!
+  role: UserRole!
+  plan: UserPlan!
+  status: UserStatus!
+  createdAt: Time!
+  userInfo: PublicUserInfo!
+}

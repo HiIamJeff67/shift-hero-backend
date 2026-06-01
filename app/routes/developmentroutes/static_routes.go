@@ -1,0 +1,39 @@
+package developmentroutes
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/gin-gonic/gin"
+
+	middlewares "github.com/your-org/go-start-monolithic-kit/app/middlewares"
+	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
+	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
+)
+
+func configureStaticRoutes() {
+	staticGroup := DevelopmentRouterGroup.Group("/static")
+	{
+		globalImagesGroup := staticGroup.Group("/globalImages")
+		globalImagesGroup.Use(
+			middlewares.UnauthorizedRateLimitMiddleware(),
+		)
+		{
+			// configure avatars
+			globalImagesGroup.GET("/avatars/:id", func(ctx *gin.Context) {
+				ctx.Header("Cross-Origin-Resource-Policy", "cross-origin")
+				avatarId := ctx.Param("id")
+				filePath := fmt.Sprintf("./global/images/avatars/userAvatar%s.png", avatarId)
+
+				if _, err := os.Stat(filePath); os.IsNotExist(err) {
+					filePath = "./global/images/avatars/userAvatar1.png"
+				}
+				logs.FInfo(traces.GetTrace(0).FileLineString(), "download file")
+
+				ctx.File(filePath)
+			})
+
+			// configure brand icon here in the future
+		}
+	}
+}

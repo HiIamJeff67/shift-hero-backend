@@ -1,0 +1,12 @@
+# GitHub Sponsors button configuration
+# Docs: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+github: HiIamJeff67
+patreon: Notezy
+
+# PayPal donate link via custom URL.
+# You can use either:
+# - https://paypal.me/<your-id>
+# - https://www.paypal.com/donate/?hosted_button_id=<button-id>
+custom:
+  - https://paypal.me/thenotezy

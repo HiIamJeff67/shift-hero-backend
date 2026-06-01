@@ -1,0 +1,36 @@
+input SearchUserFilters {
+  role: UserRole
+  plan: UserPlan
+  status: UserStatus
+  hasAvatar: Boolean
+  country: Country
+  isOnline: Boolean
+}
+
+enum SearchUserSortBy {
+  RELEVANCE
+  NAME
+  LAST_ACTIVE
+  CREATED_AT
+}
+
+input SearchUserInput {
+  query: String!
+  after: String
+  first: Int
+  filters: SearchUserFilters
+  sortBy: SearchUserSortBy
+  sortOrder: SearchSortOrder
+}
+
+type SearchUserEdge implements SearchEdge {
+  encodedSearchCursor: String!
+  node: PublicUser!
+}
+
+type SearchUserConnection implements SearchConnection {
+  searchEdges: [SearchUserEdge!]!
+  searchPageInfo: SearchPageInfo!
+  totalCount: Int!
+  searchTime: Float!
+}

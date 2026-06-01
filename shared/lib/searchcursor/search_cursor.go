@@ -1,0 +1,56 @@
+package searchcursor
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"strings"
+)
+
+// we may name other search cursors based on their functionality.
+// ex. ImprovableSearchCursor, AlphaNameSearchCursor, TimeBasedSearchCursor,
+//     ClosestSearchCursor, ReachableSearchCursor, etc.
+
+// This `SearchCursor` is a general and common search cursor used as default in most of the search scenarios
+type SearchCursor[SearchCursorFieldType any] struct {
+	Fields SearchCursorFieldType `json:"fields"`
+}
+
+func New[SearchCursorFieldType any](fields SearchCursorFieldType) *SearchCursor[SearchCursorFieldType] {
+	return &SearchCursor[SearchCursorFieldType]{
+		Fields: fields,
+	}
+}
+
+func (sc *SearchCursor[SearchCursorFieldType]) Encode() (*string, error) {
+	jsonData, err := json.Marshal(sc.Fields)
+	if err != nil {
+		return nil, err
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	return &encoded, nil
+}
+
+func Decode[SearchCursorFieldType any](encoded string) (*SearchCursor[SearchCursorFieldType], error) {
+	if len(strings.ReplaceAll(encoded, " ", "")) == 0 {
+		return nil, errors.New("encoded string cannot be empty")
+	}
+
+	jsonData, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return nil, err
+	}
+
+	var fields SearchCursorFieldType
+	if err := json.Unmarshal(jsonData, &fields); err != nil {
+		return nil, err
+	}
+
+	return &SearchCursor[SearchCursorFieldType]{Fields: fields}, nil
+}
+
+func EncodeFromData[SearchCursorType any](data SearchCursorType) (*string, error) {
+	cursor := New(data)
+	return cursor.Encode()
+}

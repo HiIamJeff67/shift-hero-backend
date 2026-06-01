@@ -1,0 +1,19 @@
+package cookies
+
+import (
+	"net/http"
+
+	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
+	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+)
+
+var RefreshTokenCookieHandler = NewCookieHandler(
+	types.ValidCookieName_RefreshToken,     // name
+	"/",                                    // path
+	constants.ExpirationTimeOfRefreshToken, // duration
+	constants.CurrentEnvironment == types.Environment_Production, // secure (set to true only if is on the production)
+	true,                    // httpOnly
+	http.SameSiteStrictMode, // sameSite
+)
+
+// Note: make sure the path should start with "/" because we want this work at the all the subpath from "/"

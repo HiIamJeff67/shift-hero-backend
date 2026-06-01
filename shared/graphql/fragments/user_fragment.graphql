@@ -1,0 +1,12 @@
+fragment PublicUserFragment on PublicUser {
+  publicId
+  name
+  displayName
+  role
+  plan
+  status
+  createdAt
+  userInfo {
+    ...PublicUserInfoFragment
+  }
+}

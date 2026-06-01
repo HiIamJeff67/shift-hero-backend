@@ -1,0 +1,216 @@
+package caches
+
+import (
+	"context"
+	"fmt"
+	"strconv"
+	"sync"
+
+	"github.com/go-redis/redis"
+
+	redislibraries "github.com/your-org/go-start-monolithic-kit/app/caches/libraries"
+	configs "github.com/your-org/go-start-monolithic-kit/app/configs"
+	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
+	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
+	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
+	util "github.com/your-org/go-start-monolithic-kit/app/util"
+	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+)
+
+var (
+	RedisCacheManagerConfigTemplate = configs.CacheManagerConfig{
+		Host:     util.GetEnv("REDIS_HOST", "go-start-monolithic-kit-redis"),
+		Port:     util.GetEnv("REDIS_PORT", "6379"),
+		Password: util.GetEnv("REDIS_PASSWORD", ""),
+		DB:       util.GetIntEnv("REDIS_INIT_DB", 0),
+	}
+)
+
+var (
+	RedisClientMap             map[int]*redis.Client                        = make(map[int]*redis.Client)
+	RedisClientToConfig        map[*redis.Client]configs.CacheManagerConfig = make(map[*redis.Client]configs.CacheManagerConfig)
+	PurposeToServerNumberRange                                              = map[types.ValidCachePurpose]types.Range[int, int]{
+		types.ValidCachePurpose_UserData:   UserDataRange,  // server number: 0 - 3 (included)
+		types.ValidCachePurpose_RateLimite: RateLimitRange, // server number: 4 - 7 (included)
+	}
+	Ctx = context.Background()
+
+	redisMapMutex sync.Mutex // since the map in go is not thread-safe, we need this mutex lock
+)
+
+func ConnectToRedis(config configs.CacheManagerConfig) *redis.Client {
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     config.Host + ":" + config.Port,
+		Password: config.Password,
+		DB:       config.DB,
+	})
+
+	if _, err := redisClient.Ping().Result(); err != nil {
+		exceptions.Cache.FailedToConnectToServer(&config.DB).WithOrigin(err).Log().Panic()
+	}
+
+	redisMapMutex.Lock()
+	defer redisMapMutex.Unlock()
+	if _, ok := RedisClientToConfig[redisClient]; !ok {
+		logs.FInfo(traces.GetTrace(0).FileLineString(), "Storing redis client server of %s into the RedisClientToConfig...", strconv.Itoa(config.DB))
+		RedisClientToConfig[redisClient] = config
+	}
+	if _, ok := RedisClientMap[config.DB]; !ok {
+		logs.FInfo(traces.GetTrace(0).FileLineString(), "Storing redis client server of %s into the RedisClientMap...", strconv.Itoa(config.DB))
+		RedisClientMap[config.DB] = redisClient
+	}
+
+	logs.FInfo(traces.GetTrace(0).FileLineString(), "Redis client server of %s connected\n", strconv.Itoa(config.DB))
+
+	return redisClient
+}
+
+func DisconnectToRedis(redisClient *redis.Client) bool {
+	config, ok := RedisClientToConfig[redisClient]
+	if !ok {
+		exceptions.Cache.ClientConfigDoesNotExist().Log()
+		return false
+	}
+
+	if err := redisClient.Close(); err != nil {
+		exceptions.Cache.FailedToDisconnectToServer(&config.DB).WithOrigin(err).Log()
+		return false // since the server is just going to stop anyway, we don't need to panic here
+	}
+
+	redisMapMutex.Lock()
+	defer redisMapMutex.Unlock()
+	logs.FInfo(traces.GetTrace(0).FileLineString(), "Deleting redis client server of %s into the RedisClientToConfig...", strconv.Itoa(config.DB))
+	delete(RedisClientToConfig, redisClient)
+	logs.FInfo(traces.GetTrace(0).FileLineString(), "Deleting redis client server of %s into the RedisClientMap...", strconv.Itoa(config.DB))
+	delete(RedisClientMap, config.DB)
+
+	logs.FInfo(traces.GetTrace(0).FileLineString(), "Redis client server of %s connected\n", strconv.Itoa(config.DB))
+
+	return true
+}
+
+func ConnectToAllRedis() bool {
+	var wg sync.WaitGroup                    // initialize the counter
+	var resultCh chan bool = make(chan bool) // initialize the channel
+	var totCount int = 0
+
+	for _, serverRange := range PurposeToServerNumberRange {
+		for i := serverRange.Start; i < serverRange.Start+serverRange.Size; i++ {
+			totCount++
+			wg.Add(1) // increase the counter by 1
+			go func(dbIndex int) {
+				defer wg.Done() // decrease the counter by 1 after this gorountine function returned
+				currentConfig := RedisCacheManagerConfigTemplate
+				currentConfig.DB = dbIndex // modify the server number of the client
+				res := ConnectToRedis(currentConfig)
+				resultCh <- (res != nil)
+			}(i)
+		}
+	}
+
+	go func() {
+		wg.Wait() // the wait group will stop here
+		// once the counter is decreased back to 0, it will continue to close the resultCh
+		close(resultCh)
+	}()
+
+	// the below part will end if the above gorountines are all finished
+	var successCount int = 0
+	for ok := range resultCh { // calculate the bool value in resultCh
+		if ok {
+			successCount++
+		}
+	}
+	return successCount == totCount
+}
+
+func DisconnectToAllRedis() bool {
+	var wg sync.WaitGroup
+	var resultCh chan bool = make(chan bool)
+	var totCount int = 0
+
+	for _, serverRange := range PurposeToServerNumberRange {
+		for i := serverRange.Start; i < serverRange.Start+serverRange.Size; i++ {
+			totCount++
+			wg.Add(1)
+			go func(dbIndex int) {
+				defer wg.Done()
+				redisClient := RedisClientMap[dbIndex]
+				ok := DisconnectToRedis(redisClient)
+				resultCh <- !ok
+			}(i)
+		}
+	}
+
+	go func() {
+		wg.Wait()
+		close(resultCh)
+	}()
+
+	var successCount int = 0
+	for ok := range resultCh {
+		if ok {
+			successCount++
+		}
+	}
+	return successCount == totCount
+}
+
+func FlushCacheLibraries() *exceptions.Exception {
+	for serverName, serverNumber := range BackendServerNameToRateLimitRedisIndex {
+		redisClient, exist := RedisClientMap[serverNumber]
+		if !exist {
+			continue
+		}
+
+		redisClient.Do("FUNCTION", "FLUSH")
+		logs.FDebug(traces.GetTrace(0).FileLineString(), "Flushed all the functions across all libraries in server %s of %d", serverName, serverNumber)
+	}
+
+	return nil
+}
+
+func LoadRateLimitRecordCacheLibraries() *exceptions.Exception {
+	for serverName, serverNumber := range BackendServerNameToRateLimitRedisIndex {
+		redisClient, exist := RedisClientMap[serverNumber]
+		if !exist {
+			continue
+		}
+
+		if err := redisClient.Do("FUNCTION", "LOAD", "REPLACE", redislibraries.RateLimitRecordLibraryContent).Err(); err != nil {
+			return exceptions.Cache.FailedToLoadRedisFunctions().
+				WithDetails(fmt.Sprintf("Failed to load functions from lua scripts in server %s of %d", serverName, serverNumber)).
+				WithOrigin(err)
+		}
+
+		logs.FInfo(traces.GetTrace(0).FileLineString(), "Reloaded all the functions in library of %s from lua scripts in server %s of %d",
+			redislibraries.RateLimitRecordLibrary,
+			serverName,
+			serverNumber,
+		)
+	}
+
+	return nil
+}
+
+func LoadUserQuotaCacheLibraries() *exceptions.Exception {
+	for serverNumber := UserDataRange.Start; serverNumber < UserDataRange.Start+UserDataRange.Size; serverNumber++ {
+		redisClient, exist := RedisClientMap[serverNumber]
+		if !exist {
+			continue
+		}
+
+		if err := redisClient.Do("FUNCTION", "LOAD", "REPLACE", redislibraries.UserQuotaLibraryContent).Err(); err != nil {
+			return exceptions.Cache.FailedToLoadRedisFunctions().
+				WithDetails(fmt.Sprintf("Failed to load functions from lua scripts in server number of %d", serverNumber)).
+				WithOrigin(err)
+		}
+
+		logs.FInfo(traces.GetTrace(0).FileLineString(), "Reloaded all the functions in library of %s from lua scripts in server number of %d",
+			redislibraries.UserQuotaLibrary,
+			serverNumber,
+		)
+	}
+
+	return nil
+}

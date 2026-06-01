@@ -1,0 +1,6 @@
+enum UserRole {
+  GUEST
+  USER
+  ADMIN
+  SUPER_ADMIN
+}

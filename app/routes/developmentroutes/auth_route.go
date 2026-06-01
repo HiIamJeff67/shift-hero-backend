@@ -1,0 +1,193 @@
+package developmentroutes
+
+import (
+	"time"
+
+	"go.opentelemetry.io/otel"
+
+	interceptors "github.com/your-org/go-start-monolithic-kit/app/interceptors"
+	middlewares "github.com/your-org/go-start-monolithic-kit/app/middlewares"
+	enums "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums"
+	modules "github.com/your-org/go-start-monolithic-kit/app/modules"
+	metrics "github.com/your-org/go-start-monolithic-kit/app/monitor/metrics"
+	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
+)
+
+func configureDevelopmentAuthRoutes() {
+	authModule := modules.NewAuthModule()
+
+	authRoutes := DevelopmentRouterGroup.Group("/auth")
+	{
+		authRoutes.POST(
+			"/register",
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "register"),
+			middlewares.ApplyMeterMiddleware(
+				otel.Meter(constants.ServiceName),
+				metrics.MetricNames.Server.Requests.Auth.Register,
+			),
+			middlewares.UnauthorizedRateLimitMiddleware(),
+			middlewares.TimeoutMiddleware(5*time.Second),
+			authModule.Binder.BindRegister(
+				authModule.Controller.Register,
+			),
+		)
+		authRoutes.POST(
+			"/registerViaGoogle",
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "registerViaGoogle"),
+			middlewares.ApplyMeterMiddleware(
+				otel.Meter(constants.ServiceName),
+				metrics.MetricNames.Server.Requests.Auth.RegisterViaGoogle,
+			),
+			middlewares.UnauthorizedRateLimitMiddleware(),
+			middlewares.TimeoutMiddleware(5*time.Second),
+			authModule.Binder.BindRegisterViaGoogle(
+				authModule.Controller.RegisterViaGoogle,
+			),
+		)
+		authRoutes.POST(
+			"/login",
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "login"),
+			middlewares.ApplyMeterMiddleware(
+				otel.Meter(constants.ServiceName),
+				metrics.MetricNames.Server.Requests.Auth.Login,
+			),
+			middlewares.UnauthorizedRateLimitMiddleware(),
+			middlewares.TimeoutMiddleware(3*time.Second),
+			authModule.Binder.BindLogin(
+				authModule.Controller.Login,
+			),
+		)
+		authRoutes.POST(
+			"/loginViaGoogle",
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "loginViaGoogle"),
+			middlewares.ApplyMeterMiddleware(
+				otel.Meter(constants.ServiceName),
+				metrics.MetricNames.Server.Requests.Auth.LoginViaGoogle,
+			),
+			middlewares.UnauthorizedRateLimitMiddleware(),
+			middlewares.TimeoutMiddleware(3*time.Second),
+			authModule.Binder.BindLoginViaGoogle(
+				authModule.Controller.LoginViaGoogle,
+			),
+		)
+		authRoutes.POST(
+			"/logout",
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "logout"),
+			middlewares.ApplyMeterMiddleware(
+				otel.Meter(constants.ServiceName),
+				metrics.MetricNames.Server.Requests.Auth.Logout,
+			),
+			middlewares.UnauthorizedRateLimitMiddleware(),
+			middlewares.TimeoutMiddleware(3*time.Second),
+			middlewares.AuthMiddleware(),
+			interceptors.ShareableResponseWriterInterceptor(
+				interceptors.EmbeddedInterceptor,
+			),
+			authModule.Binder.BindLogout(
+				authModule.Controller.Logout,
+			),
+		)
+		authRoutes.POST(
+			"/sendAuthCode",
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "sendAuthCode"),
+			middlewares.ApplyMeterMiddleware(
+				otel.Meter(constants.ServiceName),
+				metrics.MetricNames.Server.Requests.Auth.SendAuthCode,
+			),
+			middlewares.UnauthorizedRateLimitMiddleware(),
+			middlewares.TimeoutMiddleware(3*time.Second),
+			authModule.Binder.BindSendAuthCode(
+				authModule.Controller.SendAuthCode,
+			),
+		)
+		authRoutes.PUT(
+			"/validateEmail",
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "validateEmail"),
+			middlewares.ApplyMeterMiddleware(
+				otel.Meter(constants.ServiceName),
+				metrics.MetricNames.Server.Requests.Auth.ValidateEmail,
+			),
+			middlewares.UnauthorizedRateLimitMiddleware(),
+			middlewares.TimeoutMiddleware(3*time.Second),
+			middlewares.AuthMiddleware(),
+			middlewares.CSRFMiddleware(),
+			interceptors.ShareableResponseWriterInterceptor(
+				interceptors.RefreshTokenInterceptor,
+				interceptors.EmbeddedInterceptor,
+			),
+			authModule.Binder.BindValidateEmail(
+				authModule.Controller.ValidateEmail,
+			),
+		)
+		authRoutes.PUT(
+			"/resetEmail",
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "resetEmail"),
+			middlewares.ApplyMeterMiddleware(
+				otel.Meter(constants.ServiceName),
+				metrics.MetricNames.Server.Requests.Auth.ResetEmail,
+			),
+			middlewares.UnauthorizedRateLimitMiddleware(),
+			middlewares.TimeoutMiddleware(3*time.Second),
+			middlewares.AuthMiddleware(),
+			middlewares.UserRoleMiddleware(enums.UserRole_Normal),
+			middlewares.CSRFMiddleware(),
+			interceptors.ShareableResponseWriterInterceptor(
+				interceptors.RefreshTokenInterceptor,
+				interceptors.EmbeddedInterceptor,
+			),
+			authModule.Binder.BindResetEmail(
+				authModule.Controller.ResetEmail,
+			),
+		)
+		authRoutes.PUT(
+			"/forgetPassword",
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "forgetPassword"),
+			middlewares.ApplyMeterMiddleware(
+				otel.Meter(constants.ServiceName),
+				metrics.MetricNames.Server.Requests.Auth.ForgetPassword,
+			),
+			middlewares.UnauthorizedRateLimitMiddleware(),
+			middlewares.TimeoutMiddleware(3*time.Second),
+			authModule.Binder.BindForgetPassword(
+				authModule.Controller.ForgetPassword,
+			),
+		)
+		authRoutes.PUT(
+			"/resetMe",
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "resetMe"),
+			middlewares.ApplyMeterMiddleware(
+				otel.Meter(constants.ServiceName),
+				metrics.MetricNames.Server.Requests.Auth.ResetMe,
+			),
+			middlewares.UnauthorizedRateLimitMiddleware(),
+			middlewares.TimeoutMiddleware(3*time.Second),
+			middlewares.AuthMiddleware(),
+			middlewares.CSRFMiddleware(),
+			interceptors.ShareableResponseWriterInterceptor(
+				interceptors.RefreshTokenInterceptor,
+				interceptors.EmbeddedInterceptor,
+			),
+			authModule.Binder.BindResetMe(
+				authModule.Controller.ResetMe,
+			),
+		)
+		authRoutes.DELETE(
+			"/deleteMe",
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "deleteMe"),
+			middlewares.ApplyMeterMiddleware(
+				otel.Meter(constants.ServiceName),
+				metrics.MetricNames.Server.Requests.Auth.DeleteMe,
+			),
+			middlewares.UnauthorizedRateLimitMiddleware(),
+			middlewares.TimeoutMiddleware(5*time.Second),
+			middlewares.AuthMiddleware(),
+			middlewares.CSRFMiddleware(),
+			interceptors.ShareableResponseWriterInterceptor(
+				interceptors.EmbeddedInterceptor,
+			),
+			authModule.Binder.BindDeleteMe(
+				authModule.Controller.DeleteMe,
+			),
+		)
+	}
+}
