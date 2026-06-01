@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	middlewares "github.com/your-org/go-start-monolithic-kit/app/middlewares"
-	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
+	middlewares "github.com/HiIamJeff67/shift-hero-backend/app/middlewares"
+	constants "github.com/HiIamJeff67/shift-hero-backend/shared/constants"
 )
 
 var (

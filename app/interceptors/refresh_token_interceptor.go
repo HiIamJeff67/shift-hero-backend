@@ -5,11 +5,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	contexts "github.com/your-org/go-start-monolithic-kit/app/contexts"
-	cookies "github.com/your-org/go-start-monolithic-kit/app/cookies"
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	responsewriter "github.com/your-org/go-start-monolithic-kit/shared/lib/responsewriter"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	contexts "github.com/HiIamJeff67/shift-hero-backend/app/contexts"
+	cookies "github.com/HiIamJeff67/shift-hero-backend/app/cookies"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	responsewriter "github.com/HiIamJeff67/shift-hero-backend/shared/lib/responsewriter"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 // To add additional field to the response with adding additional field of `newAccessToken` and `newCSRFToken`,

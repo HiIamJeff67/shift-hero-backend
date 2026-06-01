@@ -5,16 +5,16 @@ import (
 
 	"gorm.io/gorm"
 
-	caches "github.com/your-org/go-start-monolithic-kit/app/caches"
-	dtos "github.com/your-org/go-start-monolithic-kit/app/dtos"
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	gqlmodels "github.com/your-org/go-start-monolithic-kit/app/graphql/models"
-	models "github.com/your-org/go-start-monolithic-kit/app/models"
-	inputs "github.com/your-org/go-start-monolithic-kit/app/models/inputs"
-	repositories "github.com/your-org/go-start-monolithic-kit/app/models/repositories"
-	schemas "github.com/your-org/go-start-monolithic-kit/app/models/schemas"
-	options "github.com/your-org/go-start-monolithic-kit/app/options"
-	validation "github.com/your-org/go-start-monolithic-kit/app/validation"
+	caches "github.com/HiIamJeff67/shift-hero-backend/app/caches"
+	dtos "github.com/HiIamJeff67/shift-hero-backend/app/dtos"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	gqlmodels "github.com/HiIamJeff67/shift-hero-backend/app/graphql/models"
+	models "github.com/HiIamJeff67/shift-hero-backend/app/models"
+	inputs "github.com/HiIamJeff67/shift-hero-backend/app/models/inputs"
+	repositories "github.com/HiIamJeff67/shift-hero-backend/app/models/repositories"
+	schemas "github.com/HiIamJeff67/shift-hero-backend/app/models/schemas"
+	options "github.com/HiIamJeff67/shift-hero-backend/app/options"
+	validation "github.com/HiIamJeff67/shift-hero-backend/app/validation"
 )
 
 type UserInfoServiceInterface interface {

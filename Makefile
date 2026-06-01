@@ -1,23 +1,23 @@
 # ============================== Database Shortcut Commands ============================== #
 view-hotreload-dbs:
-	docker compose exec -T go-start-monolithic-kit-api go run main.go viewDatabases
+	docker compose exec -T shift-hero-api go run main.go viewDatabases
 
 view-hotreload-enums:
-	docker compose exec -T go-start-monolithic-kit-api go run main.go viewAllEnums
+	docker compose exec -T shift-hero-api go run main.go viewAllEnums
 
 psql:
-	docker exec -it go-start-monolithic-kit-db psql -U jeff -d go-start-monolithic-kit-db
+	docker exec -it shift-hero-db psql -U jeff -d shift-hero-db
 
 # ============================== Migration Commands ============================== #
 migrate-build-db:
-	docker compose exec -T go-start-monolithic-kit-api ./go-start-monolithic-kit migrateDB
+	docker compose exec -T shift-hero-api ./shift-hero migrateDB
 migrate-hotreload-db:
-	docker compose exec -T go-start-monolithic-kit-api go run main.go migrateDB
+	docker compose exec -T shift-hero-api go run main.go migrateDB
 
 clear-build-db:
-	docker exec -i go-start-monolithic-kit-db psql -U jeff -d go-start-monolithic-kit-db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+	docker exec -i shift-hero-db psql -U jeff -d shift-hero-db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 clear-hotreload-db: # the same as the build version of db
-	docker exec -i go-start-monolithic-kit-db psql -U jeff -d go-start-monolithic-kit-db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+	docker exec -i shift-hero-db psql -U jeff -d shift-hero-db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
 remigrate-build-db:
 	make clear-build-db
@@ -29,16 +29,16 @@ remigrate-hotreload-db:
 
 # ============================== Seeding Commands ============================== #
 seed-build-db:
-	docker compose exec -T go-start-monolithic-kit-api ./go-start-monolithic-kit seedDB
+	docker compose exec -T shift-hero-api ./shift-hero seedDB
 seed-hotreload-db:
-	docker compose exec -T go-start-monolithic-kit-api go run main.go seedDB
+	docker compose exec -T shift-hero-api go run main.go seedDB
 
 clear-go-cache:
 	go clean -modcache
 	go mod download
 
 test-auth-e2e:
-	docker compose exec -T go-start-monolithic-kit-api go test ./test/e2e/auth
+	docker compose exec -T shift-hero-api go test ./test/e2e/auth
 
 # ============================== GraphQL Shortcut Commands ============================== #
 gql-generate: # update before generate

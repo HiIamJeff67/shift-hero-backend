@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/time/rate"
 
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 type RateLimitConfig struct {

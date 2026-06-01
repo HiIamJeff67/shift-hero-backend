@@ -10,12 +10,12 @@ import (
 	uuid "github.com/google/uuid"
 	"github.com/jinzhu/copier"
 
-	redislibraries "github.com/your-org/go-start-monolithic-kit/app/caches/libraries"
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	enums "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums"
-	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
-	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	redislibraries "github.com/HiIamJeff67/shift-hero-backend/app/caches/libraries"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	enums "github.com/HiIamJeff67/shift-hero-backend/app/models/schemas/enums"
+	logs "github.com/HiIamJeff67/shift-hero-backend/app/monitor/logs"
+	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 type UserDataCache struct {

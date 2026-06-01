@@ -1,6 +1,6 @@
 package configs
 
-import util "github.com/your-org/go-start-monolithic-kit/app/util"
+import util "github.com/HiIamJeff67/shift-hero-backend/app/util"
 
 type DatabaseConfig struct {
 	Host     string
@@ -12,10 +12,10 @@ type DatabaseConfig struct {
 
 var (
 	PostgresDatabaseConfig = DatabaseConfig{
-		Host:     util.GetEnv("DB_HOST", "go-start-monolithic-kit-db"),
+		Host:     util.GetEnv("DB_HOST", "shift-hero-db"),
 		User:     util.GetEnv("DB_USER", "master"),
 		Password: util.GetEnv("DB_PASSWORD", ""),
-		DBName:   util.GetEnv("DB_NAME", "go-start-monolithic-kit-db"),
+		DBName:   util.GetEnv("DB_NAME", "shift-hero-db"),
 		Port:     util.GetEnv("DOCKER_DB_PORT", "5432"),
 	}
 )

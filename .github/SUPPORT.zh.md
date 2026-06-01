@@ -2,7 +2,7 @@
 
 # 支援
 
-本支援說明適用於 `go-start-monolithic-kit` repository。
+本支援說明適用於 `shift-hero` repository。
 
 ## 管道
 

@@ -1,9 +1,9 @@
 package constants
 
-import types "github.com/your-org/go-start-monolithic-kit/shared/types"
+import types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 
 const (
-	ServiceName string = "go-start-monolithic-kit"
+	ServiceName string = "shift-hero"
 )
 
 const (

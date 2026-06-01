@@ -18,12 +18,12 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 
-	caches "github.com/your-org/go-start-monolithic-kit/app/caches"
-	configs "github.com/your-org/go-start-monolithic-kit/app/configs"
-	models "github.com/your-org/go-start-monolithic-kit/app/models"
-	developmentroutes "github.com/your-org/go-start-monolithic-kit/app/routes/developmentroutes"
-	util "github.com/your-org/go-start-monolithic-kit/app/util"
-	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
+	caches "github.com/HiIamJeff67/shift-hero-backend/app/caches"
+	configs "github.com/HiIamJeff67/shift-hero-backend/app/configs"
+	models "github.com/HiIamJeff67/shift-hero-backend/app/models"
+	developmentroutes "github.com/HiIamJeff67/shift-hero-backend/app/routes/developmentroutes"
+	util "github.com/HiIamJeff67/shift-hero-backend/app/util"
+	constants "github.com/HiIamJeff67/shift-hero-backend/shared/constants"
 )
 
 func StartApplication() {
@@ -80,7 +80,7 @@ func initOTel(ctx context.Context) (func(), error) {
 	traceExporter, _ := otlptracegrpc.New(
 		ctx,
 		otlptracegrpc.WithEndpoint(
-			util.GetEnv("DOCKER_OTEL_COLLECTOR_SERVICE_NAME", "go-start-monolithic-kit-otel-collector")+
+			util.GetEnv("DOCKER_OTEL_COLLECTOR_SERVICE_NAME", "shift-hero-otel-collector")+
 				":"+
 				util.GetEnv("DOCKER_OTEL_COLLECTOR_GRPC_PORT", "4317"),
 		),
@@ -95,7 +95,7 @@ func initOTel(ctx context.Context) (func(), error) {
 	metricExporter, _ := otlpmetricgrpc.New(
 		ctx,
 		otlpmetricgrpc.WithEndpoint(
-			util.GetEnv("DOCKER_OTEL_COLLECTOR_SERVICE_NAME", "go-start-monolithic-kit-otel-collector")+
+			util.GetEnv("DOCKER_OTEL_COLLECTOR_SERVICE_NAME", "shift-hero-otel-collector")+
 				":"+
 				util.GetEnv("DOCKER_OTEL_COLLECTOR_GRPC_PORT", "4317"),
 		),
@@ -115,7 +115,7 @@ func initOTel(ctx context.Context) (func(), error) {
 	logExporter, _ := otlploggrpc.New(
 		ctx,
 		otlploggrpc.WithEndpoint(
-			util.GetEnv("DOCKER_OTEL_COLLECTOR_SERVICE_NAME", "go-start-monolithic-kit-otel-collector")+
+			util.GetEnv("DOCKER_OTEL_COLLECTOR_SERVICE_NAME", "shift-hero-otel-collector")+
 				":"+
 				util.GetEnv("DOCKER_OTEL_COLLECTOR_GRPC_PORT", "4317"),
 		),

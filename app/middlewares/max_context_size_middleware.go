@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 func MaxContextSizeMiddleware(limitBytes int64, unit types.ByteType) gin.HandlerFunc {

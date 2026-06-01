@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
+	constants "github.com/HiIamJeff67/shift-hero-backend/shared/constants"
 )
 
 // The weak rate limiter is an implementation of Leaky Bucket algorithm

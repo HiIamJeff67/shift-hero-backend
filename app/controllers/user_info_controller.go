@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	dtos "github.com/your-org/go-start-monolithic-kit/app/dtos"
-	services "github.com/your-org/go-start-monolithic-kit/app/services"
+	dtos "github.com/HiIamJeff67/shift-hero-backend/app/dtos"
+	services "github.com/HiIamJeff67/shift-hero-backend/app/services"
 )
 
 type UserInfoControllerInterface interface {

@@ -1,5 +1,5 @@
 services:
-  go-start-monolithic-kit-redis:
+  shift-hero-redis:
     container_name: ${DOCKER_REDIS_SERVICE_NAME}
     # restart: always
     image: redis:7.2.3-alpine
@@ -7,7 +7,7 @@ services:
       - redis-data:/data
     command: ["redis-server", "--appendonly", "yes"]
 
-  go-start-monolithic-kit-db:
+  shift-hero-db:
     # should be the same as DB_HOST(hosting service)
     container_name: ${DOCKER_DB_SERVICE_NAME}
     # restart: always
@@ -24,7 +24,7 @@ services:
       timeout: 5s
       retries: 5
 
-  go-start-monolithic-kit-api:
+  shift-hero-api:
     container_name: ${DOCKER_API_SERVICE_NAME}
     image: ${DOCKER_API_SERVICE_NAME}:latest
     # restart: always
@@ -56,10 +56,10 @@ services:
     ports:
       - "${GIN_PORT}:${DOCKER_GIN_PORT}"
     depends_on:
-      go-start-monolithic-kit-db:
+      shift-hero-db:
         condition: service_healthy
 
-  go-start-monolithic-kit-nginx:
+  shift-hero-nginx:
     image: nginx:1.27-alpine
     container_name: ${DOCKER_NGINX_SERVICE_NAME}
     depends_on:
@@ -73,6 +73,6 @@ services:
 
 volumes:
   redis-data:
-    name: go-start-monolithic-kit-redis-data
+    name: shift-hero-redis-data
   postgres-data:
-    name: go-start-monolithic-kit-postgres-data
+    name: shift-hero-postgres-data

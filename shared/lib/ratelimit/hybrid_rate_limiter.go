@@ -7,11 +7,11 @@ import (
 	"github.com/google/uuid"
 	rate "golang.org/x/time/rate"
 
-	caches "github.com/your-org/go-start-monolithic-kit/app/caches"
-	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
-	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
-	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	caches "github.com/HiIamJeff67/shift-hero-backend/app/caches"
+	logs "github.com/HiIamJeff67/shift-hero-backend/app/monitor/logs"
+	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
+	constants "github.com/HiIamJeff67/shift-hero-backend/shared/constants"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 type HybridRateLimitTask struct {

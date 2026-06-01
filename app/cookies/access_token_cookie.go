@@ -3,8 +3,8 @@ package cookies
 import (
 	"net/http"
 
-	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	constants "github.com/HiIamJeff67/shift-hero-backend/shared/constants"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 var AccessTokenCookieHandler = NewCookieHandler(

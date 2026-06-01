@@ -8,18 +8,18 @@ import (
 
 	"github.com/go-redis/redis"
 
-	redislibraries "github.com/your-org/go-start-monolithic-kit/app/caches/libraries"
-	configs "github.com/your-org/go-start-monolithic-kit/app/configs"
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
-	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
-	util "github.com/your-org/go-start-monolithic-kit/app/util"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	redislibraries "github.com/HiIamJeff67/shift-hero-backend/app/caches/libraries"
+	configs "github.com/HiIamJeff67/shift-hero-backend/app/configs"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	logs "github.com/HiIamJeff67/shift-hero-backend/app/monitor/logs"
+	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
+	util "github.com/HiIamJeff67/shift-hero-backend/app/util"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 var (
 	RedisCacheManagerConfigTemplate = configs.CacheManagerConfig{
-		Host:     util.GetEnv("REDIS_HOST", "go-start-monolithic-kit-redis"),
+		Host:     util.GetEnv("REDIS_HOST", "shift-hero-redis"),
 		Port:     util.GetEnv("REDIS_PORT", "6379"),
 		Password: util.GetEnv("REDIS_PASSWORD", ""),
 		DB:       util.GetIntEnv("REDIS_INIT_DB", 0),

@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	enums "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums"
+	enums "github.com/HiIamJeff67/shift-hero-backend/app/models/schemas/enums"
 )
 
 /* ============================== Request DTO ============================== */

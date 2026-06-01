@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
+	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
 )
 
 const (

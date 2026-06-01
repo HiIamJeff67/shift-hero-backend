@@ -3,11 +3,11 @@ package commands
 import (
 	"github.com/spf13/cobra"
 
-	configs "github.com/your-org/go-start-monolithic-kit/app/configs"
-	models "github.com/your-org/go-start-monolithic-kit/app/models"
-	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
-	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	configs "github.com/HiIamJeff67/shift-hero-backend/app/configs"
+	models "github.com/HiIamJeff67/shift-hero-backend/app/models"
+	logs "github.com/HiIamJeff67/shift-hero-backend/app/monitor/logs"
+	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 var viewAllAvailableDatabasesCommand = &cobra.Command{

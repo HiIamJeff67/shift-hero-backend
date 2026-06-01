@@ -6,14 +6,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	configs "github.com/your-org/go-start-monolithic-kit/app/configs"
-	contexts "github.com/your-org/go-start-monolithic-kit/app/contexts"
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
-	metrics "github.com/your-org/go-start-monolithic-kit/app/monitor/metrics"
-	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
-	ratelimit "github.com/your-org/go-start-monolithic-kit/shared/lib/ratelimit"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	configs "github.com/HiIamJeff67/shift-hero-backend/app/configs"
+	contexts "github.com/HiIamJeff67/shift-hero-backend/app/contexts"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	logs "github.com/HiIamJeff67/shift-hero-backend/app/monitor/logs"
+	metrics "github.com/HiIamJeff67/shift-hero-backend/app/monitor/metrics"
+	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
+	ratelimit "github.com/HiIamJeff67/shift-hero-backend/shared/lib/ratelimit"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 var authorizedRateLimiter *ratelimit.HybridRateLimiter // use the hybrid one which including token bucket and cross server request management by redis

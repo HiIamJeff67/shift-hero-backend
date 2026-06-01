@@ -7,14 +7,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
-	configs "github.com/your-org/go-start-monolithic-kit/app/configs"
-	models "github.com/your-org/go-start-monolithic-kit/app/models"
-	testroutes "github.com/your-org/go-start-monolithic-kit/app/routes/testroutes"
-	test "github.com/your-org/go-start-monolithic-kit/test"
+	configs "github.com/HiIamJeff67/shift-hero-backend/app/configs"
+	models "github.com/HiIamJeff67/shift-hero-backend/app/models"
+	testroutes "github.com/HiIamJeff67/shift-hero-backend/app/routes/testroutes"
+	test "github.com/HiIamJeff67/shift-hero-backend/test"
 )
 
 const (
-	testTargetPath         = "github.com/your-org/go-start-monolithic-kit/app/routes/test_routes/auth_route.go"
+	testTargetPath         = "github.com/HiIamJeff67/shift-hero-backend/app/routes/test_routes/auth_route.go"
 	testAuthRouteNamespace = "/testRoute/auth"
 )
 

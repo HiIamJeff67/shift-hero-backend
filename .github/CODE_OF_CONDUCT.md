@@ -2,7 +2,7 @@
 
 # Code of Conduct
 
-This Code of Conduct governs collaboration in the `go-start-monolithic-kit` repository maintained by Notezy.
+This Code of Conduct governs collaboration in the `shift-hero` repository maintained by Notezy.
 
 ## Expected Behavior
 

@@ -5,9 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	graphql "github.com/your-org/go-start-monolithic-kit/app/graphql"
-	interceptors "github.com/your-org/go-start-monolithic-kit/app/interceptors"
-	middlewares "github.com/your-org/go-start-monolithic-kit/app/middlewares"
+	graphql "github.com/HiIamJeff67/shift-hero-backend/app/graphql"
+	interceptors "github.com/HiIamJeff67/shift-hero-backend/app/interceptors"
+	middlewares "github.com/HiIamJeff67/shift-hero-backend/app/middlewares"
 )
 
 func configureDevelopmentGraphQLRoutes() {

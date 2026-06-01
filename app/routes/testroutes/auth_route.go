@@ -5,9 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	middlewares "github.com/your-org/go-start-monolithic-kit/app/middlewares"
-	enums "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums"
-	modules "github.com/your-org/go-start-monolithic-kit/app/modules"
+	middlewares "github.com/HiIamJeff67/shift-hero-backend/app/middlewares"
+	enums "github.com/HiIamJeff67/shift-hero-backend/app/models/schemas/enums"
+	modules "github.com/HiIamJeff67/shift-hero-backend/app/modules"
 )
 
 // the route structure is different here, since we use these routes to do the e2e test

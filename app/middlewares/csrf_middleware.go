@@ -5,11 +5,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	caches "github.com/your-org/go-start-monolithic-kit/app/caches"
-	contexts "github.com/your-org/go-start-monolithic-kit/app/contexts"
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	tokens "github.com/your-org/go-start-monolithic-kit/app/tokens"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	caches "github.com/HiIamJeff67/shift-hero-backend/app/caches"
+	contexts "github.com/HiIamJeff67/shift-hero-backend/app/contexts"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	tokens "github.com/HiIamJeff67/shift-hero-backend/app/tokens"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 /*

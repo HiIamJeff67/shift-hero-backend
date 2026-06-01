@@ -3,8 +3,8 @@ package options
 import (
 	"gorm.io/gorm"
 
-	models "github.com/your-org/go-start-monolithic-kit/app/models"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	models "github.com/HiIamJeff67/shift-hero-backend/app/models"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 type RepositoryOptionFields struct {

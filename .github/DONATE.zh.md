@@ -2,7 +2,7 @@
 
 # 贊助 / 捐款
 
-如果 `go-start-monolithic-kit` 對你有幫助，歡迎支持 Notezy 持續維護。
+如果 `shift-hero` 對你有幫助，歡迎支持 Notezy 持續維護。
 
 ## 捐款管道
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 const ValidationEmailSubjectTemplate = "Verify Your Identity - %s Authentication Code"

@@ -2,7 +2,7 @@
 
 # Support
 
-This support guide applies to the `go-start-monolithic-kit` repository.
+This support guide applies to the `shift-hero` repository.
 
 ## Channels
 

@@ -3,9 +3,9 @@ package binders
 import (
 	"github.com/gin-gonic/gin"
 
-	contexts "github.com/your-org/go-start-monolithic-kit/app/contexts"
-	dtos "github.com/your-org/go-start-monolithic-kit/app/dtos"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	contexts "github.com/HiIamJeff67/shift-hero-backend/app/contexts"
+	dtos "github.com/HiIamJeff67/shift-hero-backend/app/dtos"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 type UserSettingBinderInterface interface {

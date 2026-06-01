@@ -2,7 +2,7 @@
 
 # 安全性政策
 
-本政策適用於由 Notezy 維護的 `go-start-monolithic-kit` repository。
+本政策適用於由 Notezy 維護的 `shift-hero` repository。
 
 ## 支援版本
 

@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	enums "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	enums "github.com/HiIamJeff67/shift-hero-backend/app/models/schemas/enums"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 // the structure of subscriptions or checkouts or anything that related to the payment and the user

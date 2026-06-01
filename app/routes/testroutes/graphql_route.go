@@ -1,8 +1,8 @@
 package testroutes
 
 import (
-	"github.com/your-org/go-start-monolithic-kit/app/graphql"
-	middlewares "github.com/your-org/go-start-monolithic-kit/app/middlewares"
+	"github.com/HiIamJeff67/shift-hero-backend/app/graphql"
+	middlewares "github.com/HiIamJeff67/shift-hero-backend/app/middlewares"
 
 	"github.com/gin-gonic/gin"
 )

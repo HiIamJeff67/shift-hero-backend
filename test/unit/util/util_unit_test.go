@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	testTargetPath = "github.com/your-org/go-start-monolithic-kit/app/util/"
+	testTargetPath = "github.com/HiIamJeff67/shift-hero-backend/app/util/"
 )
 
 func TestFeatureInParallel(t *testing.T) {

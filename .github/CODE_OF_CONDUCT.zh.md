@@ -2,7 +2,7 @@
 
 # 行為準則
 
-本行為準則適用於由 Notezy 維護的 `go-start-monolithic-kit` repository 協作空間。
+本行為準則適用於由 Notezy 維護的 `shift-hero` repository 協作空間。
 
 ## 期望行為
 

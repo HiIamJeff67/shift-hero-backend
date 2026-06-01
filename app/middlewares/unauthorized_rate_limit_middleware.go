@@ -3,12 +3,12 @@ package middlewares
 import (
 	"github.com/gin-gonic/gin"
 
-	configs "github.com/your-org/go-start-monolithic-kit/app/configs"
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
-	metrics "github.com/your-org/go-start-monolithic-kit/app/monitor/metrics"
-	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
-	ratelimit "github.com/your-org/go-start-monolithic-kit/shared/lib/ratelimit"
+	configs "github.com/HiIamJeff67/shift-hero-backend/app/configs"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	logs "github.com/HiIamJeff67/shift-hero-backend/app/monitor/logs"
+	metrics "github.com/HiIamJeff67/shift-hero-backend/app/monitor/metrics"
+	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
+	ratelimit "github.com/HiIamJeff67/shift-hero-backend/shared/lib/ratelimit"
 )
 
 var unauthorizedRateLimiter *ratelimit.HybridRateLimiter

@@ -6,12 +6,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jinzhu/copier"
 
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	inputs "github.com/your-org/go-start-monolithic-kit/app/models/inputs"
-	schemas "github.com/your-org/go-start-monolithic-kit/app/models/schemas"
-	options "github.com/your-org/go-start-monolithic-kit/app/options"
-	util "github.com/your-org/go-start-monolithic-kit/app/util"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	inputs "github.com/HiIamJeff67/shift-hero-backend/app/models/inputs"
+	schemas "github.com/HiIamJeff67/shift-hero-backend/app/models/schemas"
+	options "github.com/HiIamJeff67/shift-hero-backend/app/options"
+	util "github.com/HiIamJeff67/shift-hero-backend/app/util"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 type UserSettingRepositoryInterface interface {

@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"testing"
 
-	util "github.com/your-org/go-start-monolithic-kit/app/util"
-	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
+	util "github.com/HiIamJeff67/shift-hero-backend/app/util"
+	constants "github.com/HiIamJeff67/shift-hero-backend/shared/constants"
 )
 
 /* ============================== Test GenerateAuthCode() ============================== */

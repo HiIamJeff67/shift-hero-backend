@@ -3,9 +3,9 @@ package middlewares
 import (
 	"github.com/gin-gonic/gin"
 
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	enums "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	enums "github.com/HiIamJeff67/shift-hero-backend/app/models/schemas/enums"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 // This UserRoleMiddleware() MUST be processed AFTER the AuthMiddleware()

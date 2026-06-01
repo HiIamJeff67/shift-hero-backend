@@ -8,7 +8,7 @@
 - 建立一個通用的 TestCase (已建立在 shared/type/test_case.go) :
 
 ```Go
-// github.com/your-org/go-start-monolithic-kit/shared/types/test_case.go
+// github.com/HiIamJeff67/shift-hero-backend/shared/types/test_case.go
 type TestCase [ArgType any, ReturnType any]struct {
   Args ArgType
   Returns ReturnType

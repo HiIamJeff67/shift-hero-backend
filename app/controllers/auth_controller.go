@@ -5,9 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	cookies "github.com/your-org/go-start-monolithic-kit/app/cookies"
-	dtos "github.com/your-org/go-start-monolithic-kit/app/dtos"
-	services "github.com/your-org/go-start-monolithic-kit/app/services"
+	cookies "github.com/HiIamJeff67/shift-hero-backend/app/cookies"
+	dtos "github.com/HiIamJeff67/shift-hero-backend/app/dtos"
+	services "github.com/HiIamJeff67/shift-hero-backend/app/services"
 )
 
 type AuthControllerInterface interface {

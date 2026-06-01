@@ -2,7 +2,7 @@
 
 # Security Policy
 
-This policy applies to the `go-start-monolithic-kit` repository maintained by Notezy.
+This policy applies to the `shift-hero` repository maintained by Notezy.
 
 ## Supported Versions
 

@@ -9,11 +9,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	metrics "github.com/your-org/go-start-monolithic-kit/app/monitor/metrics"
-	ratelimit "github.com/your-org/go-start-monolithic-kit/shared/lib/ratelimit"
-	responsewriter "github.com/your-org/go-start-monolithic-kit/shared/lib/responsewriter"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	metrics "github.com/HiIamJeff67/shift-hero-backend/app/monitor/metrics"
+	ratelimit "github.com/HiIamJeff67/shift-hero-backend/shared/lib/ratelimit"
+	responsewriter "github.com/HiIamJeff67/shift-hero-backend/shared/lib/responsewriter"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 // use reusable buffer pool for timeout response writer to storing the current response of the handlers

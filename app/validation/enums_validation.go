@@ -3,8 +3,8 @@ package validation
 import (
 	"github.com/go-playground/validator/v10" // make sure we use the version 10
 
-	enums "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums"
-	util "github.com/your-org/go-start-monolithic-kit/app/util"
+	enums "github.com/HiIamJeff67/shift-hero-backend/app/models/schemas/enums"
+	util "github.com/HiIamJeff67/shift-hero-backend/app/util"
 )
 
 func RegisterEnumsValidation(validate *validator.Validate) {

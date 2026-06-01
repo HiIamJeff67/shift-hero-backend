@@ -3,8 +3,8 @@ package tokens
 import (
 	"time"
 
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	util "github.com/your-org/go-start-monolithic-kit/app/util"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	util "github.com/HiIamJeff67/shift-hero-backend/app/util"
 )
 
 var _jwtAccessTokenSecret []byte

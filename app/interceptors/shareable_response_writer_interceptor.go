@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	ratelimit "github.com/your-org/go-start-monolithic-kit/shared/lib/ratelimit"
-	responsewriter "github.com/your-org/go-start-monolithic-kit/shared/lib/responsewriter"
+	ratelimit "github.com/HiIamJeff67/shift-hero-backend/shared/lib/ratelimit"
+	responsewriter "github.com/HiIamJeff67/shift-hero-backend/shared/lib/responsewriter"
 )
 
 // use the reusable buffer pool for interceptors which required multiple response writers

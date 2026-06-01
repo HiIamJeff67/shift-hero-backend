@@ -2,7 +2,7 @@
 
 # Sponsor / Donate
 
-If `go-start-monolithic-kit` helps your team, you can support ongoing maintenance by Notezy.
+If `shift-hero` helps your team, you can support ongoing maintenance by Notezy.
 
 ## Donation Channels
 

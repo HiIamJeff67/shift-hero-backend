@@ -5,9 +5,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	app "github.com/your-org/go-start-monolithic-kit/app"
-	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
-	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
+	app "github.com/HiIamJeff67/shift-hero-backend/app"
+	logs "github.com/HiIamJeff67/shift-hero-backend/app/monitor/logs"
+	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
 )
 
 var rootCommand = &cobra.Command{

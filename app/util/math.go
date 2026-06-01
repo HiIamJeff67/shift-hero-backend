@@ -1,6 +1,6 @@
 package util
 
-import types "github.com/your-org/go-start-monolithic-kit/shared/types"
+import types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 
 func GetMinInMap[K comparable, T types.Number](searchMap map[K]T) (res T) {
 	for _, value := range searchMap {

@@ -3,12 +3,12 @@ package schemas
 import (
 	"time"
 
-	enums "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	enums "github.com/HiIamJeff67/shift-hero-backend/app/models/schemas/enums"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 // This table is only mutatable by the admin, and accessable by both client user and admin.
-// To declare the value or data of this table, you MUST use the seeding method under github.com/your-org/go-start-monolithic-kit/app/models/seeds/
+// To declare the value or data of this table, you MUST use the seeding method under github.com/HiIamJeff67/shift-hero-backend/app/models/seeds/
 type PlanLimitation struct {
 	Key       enums.UserPlan `json:"key" gorm:"column:key; type:\"UserPlan\"; primaryKey;"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"column:updated_at; type:timestamptz; not null; autoUpdateTime:true;"`

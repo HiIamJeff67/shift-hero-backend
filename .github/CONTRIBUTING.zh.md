@@ -1,12 +1,12 @@
 [English](./CONTRIBUTING.md) | [繁體中文](./CONTRIBUTING.zh.md)
 
-# go-start-monolithic-kit 貢獻指南
+# shift-hero 貢獻指南
 
-感謝你願意參與 **go-start-monolithic-kit**（由 **Notezy** 開發的後端 template 架構）。
+感謝你願意參與 **shift-hero**（由 **Notezy** 開發的後端 template 架構）。
 
 ## 本文件適用範圍
 
-這份 `.github` 規範是針對本 repository（`go-start-monolithic-kit`）的協作規則，
+這份 `.github` 規範是針對本 repository（`shift-hero`）的協作規則，
 不直接約束由此 template 建立出的下游專案。
 
 ## 權利與授權

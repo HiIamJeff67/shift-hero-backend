@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-This repository (`go-start-monolithic-kit`) includes third-party dependencies.
+This repository (`shift-hero`) includes third-party dependencies.
 The list below is consolidated from previous `LICENSES/` notices.
 
 > Maintained by Notezy. For repository license, see [`LICENSE`](../LICENSE).

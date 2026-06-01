@@ -6,10 +6,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
-	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
-	util "github.com/your-org/go-start-monolithic-kit/app/util"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	logs "github.com/HiIamJeff67/shift-hero-backend/app/monitor/logs"
+	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
+	util "github.com/HiIamJeff67/shift-hero-backend/app/util"
 )
 
 func isAllowedOrigin(origin string, allowedDomains []string) bool {

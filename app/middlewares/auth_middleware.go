@@ -5,14 +5,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	caches "github.com/your-org/go-start-monolithic-kit/app/caches"
-	cookies "github.com/your-org/go-start-monolithic-kit/app/cookies"
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	repositories "github.com/your-org/go-start-monolithic-kit/app/models/repositories"
-	schemas "github.com/your-org/go-start-monolithic-kit/app/models/schemas"
-	metrics "github.com/your-org/go-start-monolithic-kit/app/monitor/metrics"
-	tokens "github.com/your-org/go-start-monolithic-kit/app/tokens"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	caches "github.com/HiIamJeff67/shift-hero-backend/app/caches"
+	cookies "github.com/HiIamJeff67/shift-hero-backend/app/cookies"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	repositories "github.com/HiIamJeff67/shift-hero-backend/app/models/repositories"
+	schemas "github.com/HiIamJeff67/shift-hero-backend/app/models/schemas"
+	metrics "github.com/HiIamJeff67/shift-hero-backend/app/monitor/metrics"
+	tokens "github.com/HiIamJeff67/shift-hero-backend/app/tokens"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 func _extractAccessToken(ctx *gin.Context) (string, *exceptions.Exception) {

@@ -5,13 +5,13 @@ import (
 
 	"gorm.io/gorm"
 
-	dtos "github.com/your-org/go-start-monolithic-kit/app/dtos"
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	models "github.com/your-org/go-start-monolithic-kit/app/models"
-	inputs "github.com/your-org/go-start-monolithic-kit/app/models/inputs"
-	repositories "github.com/your-org/go-start-monolithic-kit/app/models/repositories"
-	options "github.com/your-org/go-start-monolithic-kit/app/options"
-	validation "github.com/your-org/go-start-monolithic-kit/app/validation"
+	dtos "github.com/HiIamJeff67/shift-hero-backend/app/dtos"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	models "github.com/HiIamJeff67/shift-hero-backend/app/models"
+	inputs "github.com/HiIamJeff67/shift-hero-backend/app/models/inputs"
+	repositories "github.com/HiIamJeff67/shift-hero-backend/app/models/repositories"
+	options "github.com/HiIamJeff67/shift-hero-backend/app/options"
+	validation "github.com/HiIamJeff67/shift-hero-backend/app/validation"
 )
 
 type UserSettingServiceInterface interface {

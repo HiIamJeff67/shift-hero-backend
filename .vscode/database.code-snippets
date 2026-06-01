@@ -4,7 +4,7 @@
     "body": [
       "package schemas",
       "import (",
-      "\tshared \"github.com/your-org/go-start-monolithic-kit/shared\"",
+      "\tshared \"github.com/HiIamJeff67/shift-hero-backend/shared\"",
       "\t\"time\"",
       "\t\"github.com/google/uuid\"",
       ")",

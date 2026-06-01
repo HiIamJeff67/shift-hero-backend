@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: Security Vulnerability Report
-    url: https://github.com/HiIamJeff67/go-start-monolithic-kit/blob/main/.github/SECURITY.md
+    url: https://github.com/HiIamJeff67/shift-hero/blob/main/.github/SECURITY.md
     about: Please do not disclose vulnerabilities publicly. Follow the private reporting process.
   - name: Maintainer Contact
     url: https://github.com/HiIamJeff67

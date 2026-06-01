@@ -1,8 +1,8 @@
 package utilunittest
 
 import (
-	util "github.com/your-org/go-start-monolithic-kit/app/util"
-	test "github.com/your-org/go-start-monolithic-kit/test"
+	util "github.com/HiIamJeff67/shift-hero-backend/app/util"
+	test "github.com/HiIamJeff67/shift-hero-backend/test"
 	"testing"
 	"time"
 

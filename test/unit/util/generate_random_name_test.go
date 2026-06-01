@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"testing"
 
-	util "github.com/your-org/go-start-monolithic-kit/app/util"
+	util "github.com/HiIamJeff67/shift-hero-backend/app/util"
 )
 
 /* ============================== Test GenerateRandomFakeDisplayName() ============================== */

@@ -1,12 +1,12 @@
 [English](./CONTRIBUTING.md) | [繁體中文](./CONTRIBUTING.zh.md)
 
-# Contributing to go-start-monolithic-kit
+# Contributing to shift-hero
 
-Thank you for contributing to **go-start-monolithic-kit**, a backend template architecture developed by **Notezy**.
+Thank you for contributing to **shift-hero**, a backend template architecture developed by **Notezy**.
 
 ## Repository Scope
 
-These community guidelines apply to this repository itself (`go-start-monolithic-kit`), not to downstream projects created from this template.
+These community guidelines apply to this repository itself (`shift-hero`), not to downstream projects created from this template.
 
 ## Ownership and License
 

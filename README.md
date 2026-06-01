@@ -1,4 +1,4 @@
-# Go Start Monolithic Kit
+# shift-hero-backend
 
 This repository is a reusable Go monolithic backend template developed by **Notezy**.
 
@@ -68,8 +68,8 @@ Parameter reference:
 
 Bootstrap behavior:
 
-- Replaces default module/import naming (`github.com/your-org/go-start-monolithic-kit`).
-- Replaces service naming defaults (`go-start-monolithic-kit`) in compose/env/docs/constants.
+- Replaces default module/import naming (`github.com/HiIamJeff67/shift-hero-backend`).
+- Replaces service naming defaults (`shift-hero`) in compose/env/docs/constants.
 - Updates env defaults (`APP_NAME`, docker service names, db/redis hosts, etc.).
 - Optionally updates `API_BASE_PATH`.
 - Runs `go mod tidy`.

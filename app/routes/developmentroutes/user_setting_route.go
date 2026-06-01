@@ -6,11 +6,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
 
-	interceptors "github.com/your-org/go-start-monolithic-kit/app/interceptors"
-	middlewares "github.com/your-org/go-start-monolithic-kit/app/middlewares"
-	modules "github.com/your-org/go-start-monolithic-kit/app/modules"
-	metrics "github.com/your-org/go-start-monolithic-kit/app/monitor/metrics"
-	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
+	interceptors "github.com/HiIamJeff67/shift-hero-backend/app/interceptors"
+	middlewares "github.com/HiIamJeff67/shift-hero-backend/app/middlewares"
+	modules "github.com/HiIamJeff67/shift-hero-backend/app/modules"
+	metrics "github.com/HiIamJeff67/shift-hero-backend/app/monitor/metrics"
+	constants "github.com/HiIamJeff67/shift-hero-backend/shared/constants"
 )
 
 func configureUserSettingRoutes() {

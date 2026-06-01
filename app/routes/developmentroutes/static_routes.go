@@ -6,9 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	middlewares "github.com/your-org/go-start-monolithic-kit/app/middlewares"
-	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
-	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
+	middlewares "github.com/HiIamJeff67/shift-hero-backend/app/middlewares"
+	logs "github.com/HiIamJeff67/shift-hero-backend/app/monitor/logs"
+	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
 )
 
 func configureStaticRoutes() {

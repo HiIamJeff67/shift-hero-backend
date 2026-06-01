@@ -8,10 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
-	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
-	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	logs "github.com/HiIamJeff67/shift-hero-backend/app/monitor/logs"
+	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
+	constants "github.com/HiIamJeff67/shift-hero-backend/shared/constants"
 )
 
 /* ============================== Initialization & Instance ============================== */

@@ -4,7 +4,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
-	util "github.com/your-org/go-start-monolithic-kit/app/util"
+	util "github.com/HiIamJeff67/shift-hero-backend/app/util"
 )
 
 var OAuthGoogleConfig = &oauth2.Config{

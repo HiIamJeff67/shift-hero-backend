@@ -2,7 +2,7 @@ FROM golang:1.26-alpine
 
 RUN apk add --no-cache git
 
-WORKDIR /go-start-monolithic-kit
+WORKDIR /shift-hero
 
 # copy go mod & go sum files
 COPY go.mod go.sum ./

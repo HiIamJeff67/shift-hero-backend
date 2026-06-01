@@ -5,9 +5,9 @@ import (
 
 	"github.com/google/uuid"
 
-	gqlmodels "github.com/your-org/go-start-monolithic-kit/app/graphql/models"
-	enums "github.com/your-org/go-start-monolithic-kit/app/models/schemas/enums"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	gqlmodels "github.com/HiIamJeff67/shift-hero-backend/app/graphql/models"
+	enums "github.com/HiIamJeff67/shift-hero-backend/app/models/schemas/enums"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 type UserInfo struct {

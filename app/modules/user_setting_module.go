@@ -1,11 +1,11 @@
 package modules
 
 import (
-	binders "github.com/your-org/go-start-monolithic-kit/app/binders"
-	controllers "github.com/your-org/go-start-monolithic-kit/app/controllers"
-	models "github.com/your-org/go-start-monolithic-kit/app/models"
-	repositories "github.com/your-org/go-start-monolithic-kit/app/models/repositories"
-	services "github.com/your-org/go-start-monolithic-kit/app/services"
+	binders "github.com/HiIamJeff67/shift-hero-backend/app/binders"
+	controllers "github.com/HiIamJeff67/shift-hero-backend/app/controllers"
+	models "github.com/HiIamJeff67/shift-hero-backend/app/models"
+	repositories "github.com/HiIamJeff67/shift-hero-backend/app/models/repositories"
+	services "github.com/HiIamJeff67/shift-hero-backend/app/services"
 )
 
 type UserSettingModule struct {

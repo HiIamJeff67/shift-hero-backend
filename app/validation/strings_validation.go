@@ -8,8 +8,8 @@ import (
 
 	"github.com/go-playground/validator/v10" // make sure we use the version 10
 
-	util "github.com/your-org/go-start-monolithic-kit/app/util"
-	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
+	util "github.com/HiIamJeff67/shift-hero-backend/app/util"
+	constants "github.com/HiIamJeff67/shift-hero-backend/shared/constants"
 )
 
 func RegisterStringsValidation(validate *validator.Validate) {

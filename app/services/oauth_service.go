@@ -7,8 +7,8 @@ import (
 
 	"golang.org/x/oauth2"
 
-	dtos "github.com/your-org/go-start-monolithic-kit/app/dtos"
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
+	dtos "github.com/HiIamJeff67/shift-hero-backend/app/dtos"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
 )
 
 type OAuthServiceInterface interface {

@@ -9,9 +9,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	constants "github.com/HiIamJeff67/shift-hero-backend/shared/constants"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 func MultipartAdapter() gin.HandlerFunc {

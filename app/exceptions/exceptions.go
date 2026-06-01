@@ -16,11 +16,11 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 
-	logs "github.com/your-org/go-start-monolithic-kit/app/monitor/logs"
-	metrics "github.com/your-org/go-start-monolithic-kit/app/monitor/metrics"
-	traces "github.com/your-org/go-start-monolithic-kit/app/monitor/traces"
-	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
-	types "github.com/your-org/go-start-monolithic-kit/shared/types"
+	logs "github.com/HiIamJeff67/shift-hero-backend/app/monitor/logs"
+	metrics "github.com/HiIamJeff67/shift-hero-backend/app/monitor/metrics"
+	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
+	constants "github.com/HiIamJeff67/shift-hero-backend/shared/constants"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 /* ============================== Exception Field Type Definition ============================== */

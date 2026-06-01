@@ -3,8 +3,8 @@ package util
 import (
 	"time"
 
-	exceptions "github.com/your-org/go-start-monolithic-kit/app/exceptions"
-	constants "github.com/your-org/go-start-monolithic-kit/shared/constants"
+	exceptions "github.com/HiIamJeff67/shift-hero-backend/app/exceptions"
+	constants "github.com/HiIamJeff67/shift-hero-backend/shared/constants"
 )
 
 /* ============================== Block Control of Login ============================== */

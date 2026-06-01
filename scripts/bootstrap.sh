@@ -102,22 +102,22 @@ update_env_key() {
 if [[ -n "$CURRENT_MODULE" ]]; then
   replace_all "$CURRENT_MODULE" "$MODULE_PATH"
 fi
-replace_all "github.com/your-org/go-start-monolithic-kit" "$MODULE_PATH"
-replace_all "__MODULE_PATH__" "$MODULE_PATH"
+replace_all "github.com/HiIamJeff67/shift-hero-backend" "$MODULE_PATH"
+replace_all "github.com/HiIamJeff67/shift-hero-backend" "$MODULE_PATH"
 
 # 2) service naming replacements
 if [[ -n "$CURRENT_SERVICE" ]]; then
   replace_all "$CURRENT_SERVICE" "$SERVICE_NAME"
 fi
-replace_all "go-start-monolithic-kit" "$SERVICE_NAME"
-replace_all "__SERVICE_NAME__" "$SERVICE_NAME"
+replace_all "shift-hero" "$SERVICE_NAME"
+replace_all "shift-hero" "$SERVICE_NAME"
 
 # 3) project display name replacements in docs
 if [[ -n "$CURRENT_PROJECT" ]]; then
   replace_all "$CURRENT_PROJECT" "$PROJECT_NAME"
 fi
-replace_all "Monolithic Backend Starter Template" "$PROJECT_NAME"
-replace_all "__PROJECT_NAME__" "$PROJECT_NAME"
+replace_all "shift-hero-backend" "$PROJECT_NAME"
+replace_all "shift-hero-backend" "$PROJECT_NAME"
 
 # 4) env alignment
 for env_file in .env .env.example; do
@@ -143,7 +143,7 @@ done
 
 if [[ -n "$API_BASE_PATH" ]]; then
   replace_all "API_BASE_PATH=api" "API_BASE_PATH=$API_BASE_PATH"
-  replace_all "__API_BASE_PATH__" "$API_BASE_PATH"
+  replace_all "api" "$API_BASE_PATH"
   update_env_key ".env" "API_BASE_PATH" "$API_BASE_PATH"
   update_env_key ".env.example" "API_BASE_PATH" "$API_BASE_PATH"
 fi
