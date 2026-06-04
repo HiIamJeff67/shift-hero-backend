@@ -13,6 +13,8 @@ migrate-build-db:
 	docker compose exec -T shift-hero-api ./shift-hero migrateDB
 migrate-hotreload-db:
 	docker compose exec -T shift-hero-api go run main.go migrateDB
+migrate-prod-db:
+	docker compose -f docker-compose.prod.yaml exec -T shift-hero-api ./server migrateDB
 
 clear-build-db:
 	docker exec -i shift-hero-db psql -U jeff -d shift-hero-db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
@@ -32,6 +34,8 @@ seed-build-db:
 	docker compose exec -T shift-hero-api ./shift-hero seedDB
 seed-hotreload-db:
 	docker compose exec -T shift-hero-api go run main.go seedDB
+seed-prod-db:
+	docker compose -f docker-compose.prod.yaml exec -T shift-hero-api ./server seedDB
 
 clear-go-cache:
 	go clean -modcache

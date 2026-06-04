@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
+	"gorm.io/gorm"
 
 	caches "github.com/HiIamJeff67/shift-hero-backend/app/caches"
 	configs "github.com/HiIamJeff67/shift-hero-backend/app/configs"
@@ -29,6 +30,7 @@ import (
 func StartApplication() {
 	models.DB = models.ConnectToDatabase(configs.PostgresDatabaseConfig)
 	defer models.DisconnectToDatabase(models.DB)
+	runDatabaseBootstrapping(models.DB)
 
 	caches.ConnectToAllRedis()
 	defer caches.DisconnectToAllRedis()
@@ -67,6 +69,30 @@ func reloadRedisLibraries() {
 		exception.Log()
 	}
 	// reload other more redis libraries here...
+}
+
+func runDatabaseBootstrapping(db *gorm.DB) {
+	if util.GetEnv("AUTO_MIGRATE_ON_START", "false") == "true" {
+		if !models.MigrateEnumsToDatabase(db) {
+			return
+		}
+		if !models.MigrateEmployeeRoleToUsersToCompanies(db) {
+			return
+		}
+		if !models.MigrateTablesToDatabase(db) {
+			return
+		}
+		if !models.MigrateTriggersToDatabase(db) {
+			return
+		}
+		if !models.MigrateConstraintsToDatabase(db) {
+			return
+		}
+	}
+
+	if util.GetEnv("AUTO_SEED_ON_START", "false") == "true" {
+		models.SeedDefaultDataToDatabase(db)
+	}
 }
 
 func initOTel(ctx context.Context) (func(), error) {
