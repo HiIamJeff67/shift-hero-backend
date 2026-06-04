@@ -15,6 +15,8 @@ var (
 )
 
 func ConfigureDevelopmentRoutes() {
+	configureHealthRoutes()
+
 	DevelopmentRouterGroup = DevelopmentRouter.Group("/" + constants.DevelopmentBaseURL) // use in development mode
 	DevelopmentRouterGroup.Use(
 		middlewares.SanitizeXForwardedForMiddleware(),
