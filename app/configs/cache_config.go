@@ -5,4 +5,5 @@ type CacheManagerConfig struct {
 	Port     string
 	Password string
 	DB       int
+	UseTLS   bool
 }

@@ -45,14 +45,17 @@ var (
 )
 
 func ConnectToDatabase(config configs.DatabaseConfig) *gorm.DB {
-	var dbArgs string = fmt.Sprintf(
-		"host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
-		config.Host,
-		config.Port,
-		config.User,
-		config.DBName,
-		config.Password,
-	)
+	dbArgs := config.URL
+	if dbArgs == "" {
+		dbArgs = fmt.Sprintf(
+			"host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
+			config.Host,
+			config.Port,
+			config.User,
+			config.DBName,
+			config.Password,
+		)
+	}
 
 	dbConn, err := gorm.Open(postgres.Open(dbArgs), &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true, // to temporarily disable the constraint of the foreignKeys

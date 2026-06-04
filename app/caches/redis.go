@@ -2,8 +2,11 @@ package caches
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/go-redis/redis"
@@ -18,12 +21,7 @@ import (
 )
 
 var (
-	RedisCacheManagerConfigTemplate = configs.CacheManagerConfig{
-		Host:     util.GetEnv("REDIS_HOST", "shift-hero-redis"),
-		Port:     util.GetEnv("REDIS_PORT", "6379"),
-		Password: util.GetEnv("REDIS_PASSWORD", ""),
-		DB:       util.GetIntEnv("REDIS_INIT_DB", 0),
-	}
+	RedisCacheManagerConfigTemplate = getRedisCacheManagerConfigFromEnv()
 )
 
 var (
@@ -39,11 +37,16 @@ var (
 )
 
 func ConnectToRedis(config configs.CacheManagerConfig) *redis.Client {
-	redisClient := redis.NewClient(&redis.Options{
+	options := &redis.Options{
 		Addr:     config.Host + ":" + config.Port,
 		Password: config.Password,
 		DB:       config.DB,
-	})
+	}
+	if config.UseTLS {
+		options.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+	}
+
+	redisClient := redis.NewClient(options)
 
 	if _, err := redisClient.Ping().Result(); err != nil {
 		exceptions.Cache.FailedToConnectToServer(&config.DB).WithOrigin(err).Log().Panic()
@@ -63,6 +66,44 @@ func ConnectToRedis(config configs.CacheManagerConfig) *redis.Client {
 	logs.FInfo(traces.GetTrace(0).FileLineString(), "Redis client server of %s connected\n", strconv.Itoa(config.DB))
 
 	return redisClient
+}
+
+func getRedisCacheManagerConfigFromEnv() configs.CacheManagerConfig {
+	config := configs.CacheManagerConfig{
+		Host:     util.GetEnv("REDIS_HOST", "shift-hero-redis"),
+		Port:     util.GetEnv("REDIS_PORT", "6379"),
+		Password: util.GetEnv("REDIS_PASSWORD", ""),
+		DB:       util.GetIntEnv("REDIS_INIT_DB", 0),
+	}
+
+	redisURL := util.GetEnv("REDIS_URL", "")
+	if redisURL == "" {
+		return config
+	}
+
+	parsedURL, err := url.Parse(redisURL)
+	if err != nil {
+		logs.FError(traces.GetTrace(0).FileLineString(), "Failed to parse REDIS_URL: %v", err)
+		return config
+	}
+
+	if parsedURL.Hostname() != "" {
+		config.Host = parsedURL.Hostname()
+	}
+	if parsedURL.Port() != "" {
+		config.Port = parsedURL.Port()
+	}
+	if password, ok := parsedURL.User.Password(); ok {
+		config.Password = password
+	}
+	if parsedURL.Path != "" && parsedURL.Path != "/" {
+		if db, err := strconv.Atoi(strings.TrimPrefix(parsedURL.Path, "/")); err == nil {
+			config.DB = db
+		}
+	}
+	config.UseTLS = parsedURL.Scheme == "rediss"
+
+	return config
 }
 
 func DisconnectToRedis(redisClient *redis.Client) bool {
