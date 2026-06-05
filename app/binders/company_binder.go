@@ -20,6 +20,11 @@ type CompanyBinderInterface interface {
 	BindAddCompanyMember(controllerFunc types.ControllerFunc[*dtos.AddCompanyMemberReqDto]) gin.HandlerFunc
 	BindUpdateCompanyMember(controllerFunc types.ControllerFunc[*dtos.UpdateCompanyMemberReqDto]) gin.HandlerFunc
 	BindDeleteCompanyMember(controllerFunc types.ControllerFunc[*dtos.DeleteCompanyMemberReqDto]) gin.HandlerFunc
+	BindCreateCompanyJoinRequest(controllerFunc types.ControllerFunc[*dtos.CreateCompanyJoinRequestReqDto]) gin.HandlerFunc
+	BindGetCompanyJoinRequests(controllerFunc types.ControllerFunc[*dtos.GetCompanyJoinRequestsReqDto]) gin.HandlerFunc
+	BindApproveCompanyJoinRequest(controllerFunc types.ControllerFunc[*dtos.ReviewCompanyJoinRequestReqDto]) gin.HandlerFunc
+	BindRejectCompanyJoinRequest(controllerFunc types.ControllerFunc[*dtos.ReviewCompanyJoinRequestReqDto]) gin.HandlerFunc
+	BindGetMyCompanyJoinRequests(controllerFunc types.ControllerFunc[*dtos.GetMyCompanyJoinRequestsReqDto]) gin.HandlerFunc
 }
 
 type CompanyBinder struct{}
@@ -170,6 +175,84 @@ func (b *CompanyBinder) BindDeleteCompanyMember(controllerFunc types.ControllerF
 			exceptions.Company.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
+		controllerFunc(ctx, &reqDto)
+	}
+}
+
+func (b *CompanyBinder) BindCreateCompanyJoinRequest(controllerFunc types.ControllerFunc[*dtos.CreateCompanyJoinRequestReqDto]) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var reqDto dtos.CreateCompanyJoinRequestReqDto
+		userId, exception := contexts.GetAndConvertContextFieldToUUID(ctx, types.ContextFieldName_User_Id)
+		if exception != nil {
+			exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		reqDto.ContextFields.UserId = *userId
+		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
+			exceptions.Company.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		controllerFunc(ctx, &reqDto)
+	}
+}
+
+func (b *CompanyBinder) BindGetCompanyJoinRequests(controllerFunc types.ControllerFunc[*dtos.GetCompanyJoinRequestsReqDto]) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var reqDto dtos.GetCompanyJoinRequestsReqDto
+		userId, exception := contexts.GetAndConvertContextFieldToUUID(ctx, types.ContextFieldName_User_Id)
+		if exception != nil {
+			exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		reqDto.ContextFields.UserId = *userId
+		companyId, exception := parseCompanyIdFromPathForCompanyBinder(ctx)
+		if exception != nil {
+			exception.SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		reqDto.Param.CompanyId = companyId
+		if err := ctx.ShouldBindQuery(&reqDto.Body); err != nil {
+			exceptions.Company.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		controllerFunc(ctx, &reqDto)
+	}
+}
+
+func (b *CompanyBinder) BindApproveCompanyJoinRequest(controllerFunc types.ControllerFunc[*dtos.ReviewCompanyJoinRequestReqDto]) gin.HandlerFunc {
+	return b.bindReviewCompanyJoinRequest(controllerFunc)
+}
+
+func (b *CompanyBinder) BindRejectCompanyJoinRequest(controllerFunc types.ControllerFunc[*dtos.ReviewCompanyJoinRequestReqDto]) gin.HandlerFunc {
+	return b.bindReviewCompanyJoinRequest(controllerFunc)
+}
+
+func (b *CompanyBinder) bindReviewCompanyJoinRequest(controllerFunc types.ControllerFunc[*dtos.ReviewCompanyJoinRequestReqDto]) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var reqDto dtos.ReviewCompanyJoinRequestReqDto
+		userId, exception := contexts.GetAndConvertContextFieldToUUID(ctx, types.ContextFieldName_User_Id)
+		if exception != nil {
+			exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		reqDto.ContextFields.UserId = *userId
+		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
+			exceptions.Company.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		controllerFunc(ctx, &reqDto)
+	}
+}
+
+func (b *CompanyBinder) BindGetMyCompanyJoinRequests(controllerFunc types.ControllerFunc[*dtos.GetMyCompanyJoinRequestsReqDto]) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var reqDto dtos.GetMyCompanyJoinRequestsReqDto
+		userId, exception := contexts.GetAndConvertContextFieldToUUID(ctx, types.ContextFieldName_User_Id)
+		if exception != nil {
+			exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		reqDto.ContextFields.UserId = *userId
 		controllerFunc(ctx, &reqDto)
 	}
 }

@@ -76,3 +76,27 @@ func (d *CompanyExceptionDomain) BadRequest(message string) *Exception {
 		LastTrace:      traces.GetTrace(1),
 	}
 }
+
+func (d *CompanyExceptionDomain) DuplicateJoinRequest(companyId string, userId string) *Exception {
+	return &Exception{
+		Code:           d.BaseCode + 4,
+		Prefix:         d.Prefix,
+		Reason:         "DuplicateJoinRequest",
+		IsInternal:     false,
+		Message:        fmt.Sprintf("User %s already has a pending join request for company %s", userId, companyId),
+		HTTPStatusCode: http.StatusConflict,
+		LastTrace:      traces.GetTrace(1),
+	}
+}
+
+func (d *CompanyExceptionDomain) JoinRequestAlreadyProcessed(joinRequestId string) *Exception {
+	return &Exception{
+		Code:           d.BaseCode + 5,
+		Prefix:         d.Prefix,
+		Reason:         "JoinRequestAlreadyProcessed",
+		IsInternal:     false,
+		Message:        fmt.Sprintf("Company join request %s has already been processed", joinRequestId),
+		HTTPStatusCode: http.StatusConflict,
+		LastTrace:      traces.GetTrace(1),
+	}
+}

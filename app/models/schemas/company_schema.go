@@ -16,12 +16,13 @@ type Company struct {
 	CreatedAt   time.Time `json:"createdAt" gorm:"column:created_at; type:timestamptz; not null; autoCreateTime:true;"`
 
 	// relations
-	UsersToCompanies  []UsersToCompanies `json:"usersToCompanies" gorm:"foreignKey:CompanyId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
-	CompanySettings   *CompanySettings   `json:"companySettings" gorm:"foreignKey:CompanyId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
-	ShiftRequirements []ShiftRequirement `json:"shiftRequirements" gorm:"foreignKey:CompanyId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
-	AvailabilitySlots []AvailabilitySlot `json:"availabilitySlots" gorm:"foreignKey:CompanyId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
-	ShiftAssignments  []ShiftAssignment  `json:"shiftAssignments" gorm:"foreignKey:CompanyId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
-	SwapRequests      []SwapRequest      `json:"swapRequests" gorm:"foreignKey:CompanyId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	UsersToCompanies  []UsersToCompanies   `json:"usersToCompanies" gorm:"foreignKey:CompanyId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	CompanySettings   *CompanySettings     `json:"companySettings" gorm:"foreignKey:CompanyId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	ShiftRequirements []ShiftRequirement   `json:"shiftRequirements" gorm:"foreignKey:CompanyId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	AvailabilitySlots []AvailabilitySlot   `json:"availabilitySlots" gorm:"foreignKey:CompanyId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	ShiftAssignments  []ShiftAssignment    `json:"shiftAssignments" gorm:"foreignKey:CompanyId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	SwapRequests      []SwapRequest        `json:"swapRequests" gorm:"foreignKey:CompanyId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	JoinRequests      []CompanyJoinRequest `json:"joinRequests" gorm:"foreignKey:CompanyId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }
 
 // Company Table Name
@@ -39,4 +40,5 @@ const (
 	CompanyRelation_AvailabilitySlots CompanyRelation = "AvailabilitySlots"
 	CompanyRelation_ShiftAssignments  CompanyRelation = "ShiftAssignments"
 	CompanyRelation_SwapRequests      CompanyRelation = "SwapRequests"
+	CompanyRelation_JoinRequests      CompanyRelation = "JoinRequests"
 )

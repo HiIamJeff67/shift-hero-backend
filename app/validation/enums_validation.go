@@ -44,6 +44,14 @@ func RegisterEnumsValidation(validate *validator.Validate) {
 		val := fl.Field().String()
 		return util.IsStringIn(val, enums.AllSwapRequestStatusStrings)
 	})
+	validate.RegisterValidation("isschedulepublicationstatus", func(fl validator.FieldLevel) bool {
+		val := fl.Field().String()
+		return util.IsStringIn(val, enums.AllSchedulePublicationStatusStrings)
+	})
+	validate.RegisterValidation("iscompanyjoinrequeststatus", func(fl validator.FieldLevel) bool {
+		val := fl.Field().String()
+		return util.IsStringIn(val, enums.AllCompanyJoinRequestStatusStrings)
+	})
 	validate.RegisterValidation("issupportedcurrencycode", func(fl validator.FieldLevel) bool {
 		val := fl.Field().String()
 		return util.IsStringIn(val, enums.AllSupportedCurrencyCodeStrings)

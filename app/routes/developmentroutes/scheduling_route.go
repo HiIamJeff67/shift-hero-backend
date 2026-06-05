@@ -100,6 +100,14 @@ func configureDevelopmentSchedulingRoutes() {
 		defaultMiddlewares,
 		module.Binder.BindReplaceAssignments(module.Controller.ReplaceAssignments),
 	)...)
+	routes.POST("/assignments/claim", middlewares.RepositionMiddleware(
+		[]gin.HandlerFunc{
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "claimAssignment"),
+			middlewares.ApplyMeterMiddleware(otel.Meter(constants.ServiceName), "server.requests.scheduling.claimAssignment"),
+		},
+		defaultMiddlewares,
+		module.Binder.BindClaimAssignment(module.Controller.ClaimAssignment),
+	)...)
 	routes.GET("/:companyId/assignments", middlewares.RepositionMiddleware(
 		[]gin.HandlerFunc{
 			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "getAssignments"),
@@ -148,6 +156,40 @@ func configureDevelopmentSchedulingRoutes() {
 		},
 		defaultMiddlewares,
 		module.Binder.BindCancelSwapRequest(module.Controller.CancelSwapRequest),
+	)...)
+
+	routes.GET("/:companyId/schedulePublications", middlewares.RepositionMiddleware(
+		[]gin.HandlerFunc{
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "getSchedulePublication"),
+			middlewares.ApplyMeterMiddleware(otel.Meter(constants.ServiceName), "server.requests.scheduling.getSchedulePublication"),
+		},
+		defaultMiddlewares,
+		module.Binder.BindGetSchedulePublication(module.Controller.GetSchedulePublication),
+	)...)
+	routes.PUT("/schedulePublications", middlewares.RepositionMiddleware(
+		[]gin.HandlerFunc{
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "upsertSchedulePublication"),
+			middlewares.ApplyMeterMiddleware(otel.Meter(constants.ServiceName), "server.requests.scheduling.upsertSchedulePublication"),
+		},
+		defaultMiddlewares,
+		module.Binder.BindUpsertSchedulePublication(module.Controller.UpsertSchedulePublication),
+	)...)
+
+	routes.GET("/:companyId/scheduleSettings", middlewares.RepositionMiddleware(
+		[]gin.HandlerFunc{
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "getScheduleSettings"),
+			middlewares.ApplyMeterMiddleware(otel.Meter(constants.ServiceName), "server.requests.scheduling.getScheduleSettings"),
+		},
+		defaultMiddlewares,
+		module.Binder.BindGetCompanySettings(module.Controller.GetCompanySettings),
+	)...)
+	routes.PATCH("/scheduleSettings", middlewares.RepositionMiddleware(
+		[]gin.HandlerFunc{
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "updateScheduleSettings"),
+			middlewares.ApplyMeterMiddleware(otel.Meter(constants.ServiceName), "server.requests.scheduling.updateScheduleSettings"),
+		},
+		defaultMiddlewares,
+		module.Binder.BindUpdateCompanySettings(module.Controller.UpdateCompanySettings),
 	)...)
 
 	routes.GET("/:companyId/settings", middlewares.RepositionMiddleware(

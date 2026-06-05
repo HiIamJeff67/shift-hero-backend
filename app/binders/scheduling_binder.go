@@ -20,12 +20,15 @@ type SchedulingBinderInterface interface {
 	BindDeleteAvailabilitySlot(controllerFunc types.ControllerFunc[*dtos.DeleteAvailabilitySlotReqDto]) gin.HandlerFunc
 	BindGenerateAssignments(controllerFunc types.ControllerFunc[*dtos.GenerateAssignmentsReqDto]) gin.HandlerFunc
 	BindReplaceAssignments(controllerFunc types.ControllerFunc[*dtos.ReplaceAssignmentsReqDto]) gin.HandlerFunc
+	BindClaimAssignment(controllerFunc types.ControllerFunc[*dtos.ClaimAssignmentReqDto]) gin.HandlerFunc
 	BindGetAssignments(controllerFunc types.ControllerFunc[*dtos.GetAssignmentsReqDto]) gin.HandlerFunc
 	BindCreateSwapRequest(controllerFunc types.ControllerFunc[*dtos.CreateSwapRequestReqDto]) gin.HandlerFunc
 	BindGetSwapRequests(controllerFunc types.ControllerFunc[*dtos.GetSwapRequestsReqDto]) gin.HandlerFunc
 	BindClaimSwapRequest(controllerFunc types.ControllerFunc[*dtos.ClaimSwapRequestReqDto]) gin.HandlerFunc
 	BindApproveSwapRequest(controllerFunc types.ControllerFunc[*dtos.ApproveSwapRequestReqDto]) gin.HandlerFunc
 	BindCancelSwapRequest(controllerFunc types.ControllerFunc[*dtos.CancelSwapRequestReqDto]) gin.HandlerFunc
+	BindGetSchedulePublication(controllerFunc types.ControllerFunc[*dtos.GetSchedulePublicationReqDto]) gin.HandlerFunc
+	BindUpsertSchedulePublication(controllerFunc types.ControllerFunc[*dtos.UpsertSchedulePublicationReqDto]) gin.HandlerFunc
 	BindGetCompanySettings(controllerFunc types.ControllerFunc[*dtos.GetCompanySettingsReqDto]) gin.HandlerFunc
 	BindUpdateCompanySettings(controllerFunc types.ControllerFunc[*dtos.UpdateCompanySettingsReqDto]) gin.HandlerFunc
 }
@@ -63,7 +66,7 @@ func (b *SchedulingBinder) BindCreateShiftRequirement(controllerFunc types.Contr
 		}
 		reqDto.ContextFields.UserId = uid
 		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -85,6 +88,10 @@ func (b *SchedulingBinder) BindGetShiftRequirements(controllerFunc types.Control
 			return
 		}
 		reqDto.Param.CompanyId = companyId
+		if err := ctx.ShouldBindQuery(&reqDto.Body); err != nil {
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
 		controllerFunc(ctx, &reqDto)
 	}
 }
@@ -99,7 +106,7 @@ func (b *SchedulingBinder) BindUpdateShiftRequirement(controllerFunc types.Contr
 		}
 		reqDto.ContextFields.UserId = uid
 		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -116,7 +123,7 @@ func (b *SchedulingBinder) BindDeleteShiftRequirement(controllerFunc types.Contr
 		}
 		reqDto.ContextFields.UserId = uid
 		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -133,7 +140,7 @@ func (b *SchedulingBinder) BindUpsertAvailabilitySlots(controllerFunc types.Cont
 		}
 		reqDto.ContextFields.UserId = uid
 		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -156,7 +163,7 @@ func (b *SchedulingBinder) BindGetAvailabilitySlots(controllerFunc types.Control
 		}
 		reqDto.Param.CompanyId = companyId
 		if err := ctx.ShouldBindQuery(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -173,7 +180,7 @@ func (b *SchedulingBinder) BindDeleteAvailabilitySlot(controllerFunc types.Contr
 		}
 		reqDto.ContextFields.UserId = uid
 		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -190,7 +197,7 @@ func (b *SchedulingBinder) BindGenerateAssignments(controllerFunc types.Controll
 		}
 		reqDto.ContextFields.UserId = uid
 		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -207,7 +214,24 @@ func (b *SchedulingBinder) BindReplaceAssignments(controllerFunc types.Controlle
 		}
 		reqDto.ContextFields.UserId = uid
 		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		controllerFunc(ctx, &reqDto)
+	}
+}
+
+func (b *SchedulingBinder) BindClaimAssignment(controllerFunc types.ControllerFunc[*dtos.ClaimAssignmentReqDto]) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var reqDto dtos.ClaimAssignmentReqDto
+		uid, exception := extractUserId(ctx)
+		if exception != nil {
+			exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		reqDto.ContextFields.UserId = uid
+		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -230,7 +254,7 @@ func (b *SchedulingBinder) BindGetAssignments(controllerFunc types.ControllerFun
 		}
 		reqDto.Param.CompanyId = companyId
 		if err := ctx.ShouldBindQuery(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -247,7 +271,7 @@ func (b *SchedulingBinder) BindCreateSwapRequest(controllerFunc types.Controller
 		}
 		reqDto.ContextFields.UserId = uid
 		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -270,7 +294,7 @@ func (b *SchedulingBinder) BindGetSwapRequests(controllerFunc types.ControllerFu
 		}
 		reqDto.Param.CompanyId = companyId
 		if err := ctx.ShouldBindQuery(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -287,7 +311,7 @@ func (b *SchedulingBinder) BindClaimSwapRequest(controllerFunc types.ControllerF
 		}
 		reqDto.ContextFields.UserId = uid
 		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -304,7 +328,7 @@ func (b *SchedulingBinder) BindApproveSwapRequest(controllerFunc types.Controlle
 		}
 		reqDto.ContextFields.UserId = uid
 		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -321,7 +345,47 @@ func (b *SchedulingBinder) BindCancelSwapRequest(controllerFunc types.Controller
 		}
 		reqDto.ContextFields.UserId = uid
 		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		controllerFunc(ctx, &reqDto)
+	}
+}
+
+func (b *SchedulingBinder) BindGetSchedulePublication(controllerFunc types.ControllerFunc[*dtos.GetSchedulePublicationReqDto]) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var reqDto dtos.GetSchedulePublicationReqDto
+		uid, exception := extractUserId(ctx)
+		if exception != nil {
+			exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		reqDto.ContextFields.UserId = uid
+		companyId, exception := parseCompanyIdFromPathForSchedulingBinder(ctx)
+		if exception != nil {
+			exception.SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		reqDto.Param.CompanyId = companyId
+		if err := ctx.ShouldBindQuery(&reqDto.Body); err != nil {
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		controllerFunc(ctx, &reqDto)
+	}
+}
+
+func (b *SchedulingBinder) BindUpsertSchedulePublication(controllerFunc types.ControllerFunc[*dtos.UpsertSchedulePublicationReqDto]) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var reqDto dtos.UpsertSchedulePublicationReqDto
+		uid, exception := extractUserId(ctx)
+		if exception != nil {
+			exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		reqDto.ContextFields.UserId = uid
+		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)
@@ -357,7 +421,7 @@ func (b *SchedulingBinder) BindUpdateCompanySettings(controllerFunc types.Contro
 		}
 		reqDto.ContextFields.UserId = uid
 		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
-			exceptions.Scheduling.InvalidDto().WithOrigin(err).SafelyAbortAndResponseWithJSON(ctx)
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
 		}
 		controllerFunc(ctx, &reqDto)

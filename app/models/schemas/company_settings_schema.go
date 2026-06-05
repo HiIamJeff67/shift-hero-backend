@@ -12,6 +12,7 @@ type CompanySettings struct {
 	AutoApproveSwaps bool      `json:"autoApproveSwaps" gorm:"column:auto_approve_swaps; not null; default:false;"`
 	MaxWeeklyHours   int32     `json:"maxWeeklyHours" gorm:"column:max_weekly_hours; type:integer; not null; default:40;"`
 	MinRestHours     int32     `json:"minRestHours" gorm:"column:min_rest_hours; type:integer; not null; default:8;"`
+	Timezone         string    `json:"timezone" gorm:"column:timezone; size:64; not null; default:'Asia/Taipei';"`
 	UpdatedAt        time.Time `json:"updatedAt" gorm:"column:updated_at; type:timestamptz; not null; autoUpdateTime:true;"`
 	CreatedAt        time.Time `json:"createdAt" gorm:"column:created_at; type:timestamptz; not null; autoCreateTime:true;"`
 

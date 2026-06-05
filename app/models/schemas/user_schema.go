@@ -39,6 +39,7 @@ type User struct {
 	AvailabilitySlots   []AvailabilitySlot    `json:"availabilitySlots" gorm:"foreignKey:UserId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	ShiftAssignments    []ShiftAssignment     `json:"shiftAssignments" gorm:"foreignKey:UserId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	SwapRequests        []SwapRequest         `json:"swapRequests" gorm:"foreignKey:RequesterUserId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	CompanyJoinRequests []CompanyJoinRequest  `json:"companyJoinRequests" gorm:"foreignKey:RequesterUserId; references:Id; constraint:OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }
 
 // User Table Name
@@ -59,6 +60,7 @@ const (
 	UserRelation_AvailabilitySlots   UserRelation = "AvailabilitySlots"
 	UserRelation_ShiftAssignments    UserRelation = "ShiftAssignments"
 	UserRelation_SwapRequests        UserRelation = "SwapRequests"
+	UserRelation_CompanyJoinRequests UserRelation = "CompanyJoinRequests"
 )
 
 /* ============================== Relative Type Conversions ============================== */

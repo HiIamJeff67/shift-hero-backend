@@ -18,6 +18,11 @@ type CompanyControllerInterface interface {
 	AddCompanyMember(ctx *gin.Context, reqDto *dtos.AddCompanyMemberReqDto)
 	UpdateCompanyMember(ctx *gin.Context, reqDto *dtos.UpdateCompanyMemberReqDto)
 	DeleteCompanyMember(ctx *gin.Context, reqDto *dtos.DeleteCompanyMemberReqDto)
+	CreateCompanyJoinRequest(ctx *gin.Context, reqDto *dtos.CreateCompanyJoinRequestReqDto)
+	GetCompanyJoinRequests(ctx *gin.Context, reqDto *dtos.GetCompanyJoinRequestsReqDto)
+	ApproveCompanyJoinRequest(ctx *gin.Context, reqDto *dtos.ReviewCompanyJoinRequestReqDto)
+	RejectCompanyJoinRequest(ctx *gin.Context, reqDto *dtos.ReviewCompanyJoinRequestReqDto)
+	GetMyCompanyJoinRequests(ctx *gin.Context, reqDto *dtos.GetMyCompanyJoinRequestsReqDto)
 }
 
 type CompanyController struct {
@@ -128,6 +133,76 @@ func (c *CompanyController) UpdateCompanyMember(ctx *gin.Context, reqDto *dtos.U
 
 func (c *CompanyController) DeleteCompanyMember(ctx *gin.Context, reqDto *dtos.DeleteCompanyMemberReqDto) {
 	resDto, exception := c.companyService.DeleteCompanyMember(ctx.Request.Context(), reqDto)
+	if exception != nil {
+		exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"data":      resDto,
+		"exception": nil,
+	})
+}
+
+func (c *CompanyController) CreateCompanyJoinRequest(ctx *gin.Context, reqDto *dtos.CreateCompanyJoinRequestReqDto) {
+	resDto, exception := c.companyService.CreateCompanyJoinRequest(ctx.Request.Context(), reqDto)
+	if exception != nil {
+		exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"data":      resDto,
+		"exception": nil,
+	})
+}
+
+func (c *CompanyController) GetCompanyJoinRequests(ctx *gin.Context, reqDto *dtos.GetCompanyJoinRequestsReqDto) {
+	resDto, exception := c.companyService.GetCompanyJoinRequests(ctx.Request.Context(), reqDto)
+	if exception != nil {
+		exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"data":      resDto,
+		"exception": nil,
+	})
+}
+
+func (c *CompanyController) ApproveCompanyJoinRequest(ctx *gin.Context, reqDto *dtos.ReviewCompanyJoinRequestReqDto) {
+	resDto, exception := c.companyService.ApproveCompanyJoinRequest(ctx.Request.Context(), reqDto)
+	if exception != nil {
+		exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"data":      resDto,
+		"exception": nil,
+	})
+}
+
+func (c *CompanyController) RejectCompanyJoinRequest(ctx *gin.Context, reqDto *dtos.ReviewCompanyJoinRequestReqDto) {
+	resDto, exception := c.companyService.RejectCompanyJoinRequest(ctx.Request.Context(), reqDto)
+	if exception != nil {
+		exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"data":      resDto,
+		"exception": nil,
+	})
+}
+
+func (c *CompanyController) GetMyCompanyJoinRequests(ctx *gin.Context, reqDto *dtos.GetMyCompanyJoinRequestsReqDto) {
+	resDto, exception := c.companyService.GetMyCompanyJoinRequests(ctx.Request.Context(), reqDto)
 	if exception != nil {
 		exception.Log().SafelyAbortAndResponseWithJSON(ctx)
 		return

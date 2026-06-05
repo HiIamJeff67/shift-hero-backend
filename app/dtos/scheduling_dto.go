@@ -33,7 +33,10 @@ type GetShiftRequirementsReqDto struct {
 		struct {
 			UserId uuid.UUID
 		},
-		any,
+		struct {
+			StartAt *time.Time `form:"startAt"`
+			EndAt   *time.Time `form:"endAt"`
+		},
 		struct {
 			CompanyId uuid.UUID `uri:"companyId" validate:"required,uuid4"`
 		},
@@ -158,6 +161,20 @@ type ReplaceAssignmentsReqDto struct {
 	]
 }
 
+type ClaimAssignmentReqDto struct {
+	Request[
+		any,
+		struct {
+			UserId uuid.UUID
+		},
+		struct {
+			CompanyId          uuid.UUID `json:"companyId" validate:"required,uuid4"`
+			ShiftRequirementId uuid.UUID `json:"shiftRequirementId" validate:"required,uuid4"`
+		},
+		any,
+	]
+}
+
 type GetAssignmentsReqDto struct {
 	Request[
 		any,
@@ -247,6 +264,38 @@ type CancelSwapRequestReqDto struct {
 	]
 }
 
+type GetSchedulePublicationReqDto struct {
+	Request[
+		any,
+		struct {
+			UserId uuid.UUID
+		},
+		struct {
+			WeekStart string `form:"weekStart" validate:"required"`
+			Timezone  string `form:"timezone" validate:"omitempty,max=64"`
+		},
+		struct {
+			CompanyId uuid.UUID `uri:"companyId" validate:"required,uuid4"`
+		},
+	]
+}
+
+type UpsertSchedulePublicationReqDto struct {
+	Request[
+		any,
+		struct {
+			UserId uuid.UUID
+		},
+		struct {
+			CompanyId uuid.UUID                       `json:"companyId" validate:"required,uuid4"`
+			WeekStart string                          `json:"weekStart" validate:"required"`
+			Timezone  string                          `json:"timezone" validate:"omitempty,max=64"`
+			Status    enums.SchedulePublicationStatus `json:"status" validate:"required,isschedulepublicationstatus"`
+		},
+		any,
+	]
+}
+
 type GetCompanySettingsReqDto struct {
 	Request[
 		any,
@@ -269,9 +318,10 @@ type UpdateCompanySettingsReqDto struct {
 		struct {
 			CompanyId uuid.UUID `json:"companyId" validate:"required,uuid4"`
 			PartialUpdateDto[struct {
-				AutoApproveSwaps *bool  `json:"autoApproveSwaps" validate:"omitnil"`
-				MaxWeeklyHours   *int32 `json:"maxWeeklyHours" validate:"omitnil,min=1,max=168"`
-				MinRestHours     *int32 `json:"minRestHours" validate:"omitnil,min=0,max=24"`
+				AutoApproveSwaps *bool   `json:"autoApproveSwaps" validate:"omitnil"`
+				MaxWeeklyHours   *int32  `json:"maxWeeklyHours" validate:"omitnil,min=1,max=168"`
+				MinRestHours     *int32  `json:"minRestHours" validate:"omitnil,min=0,max=24"`
+				Timezone         *string `json:"timezone" validate:"omitnil,max=64"`
 			}]
 		},
 		any,
@@ -326,11 +376,23 @@ type SwapRequestResDto struct {
 	CreatedAt         time.Time               `json:"createdAt"`
 }
 
+type SchedulePublicationResDto struct {
+	CompanyId         uuid.UUID                       `json:"companyId"`
+	WeekStart         string                          `json:"weekStart"`
+	Timezone          string                          `json:"timezone"`
+	Status            enums.SchedulePublicationStatus `json:"status"`
+	PublishedByUserId *uuid.UUID                      `json:"publishedByUserId"`
+	PublishedAt       *time.Time                      `json:"publishedAt"`
+	UpdatedAt         time.Time                       `json:"updatedAt"`
+	CreatedAt         time.Time                       `json:"createdAt"`
+}
+
 type CompanySettingsResDto struct {
 	CompanyId        uuid.UUID `json:"companyId"`
 	AutoApproveSwaps bool      `json:"autoApproveSwaps"`
 	MaxWeeklyHours   int32     `json:"maxWeeklyHours"`
 	MinRestHours     int32     `json:"minRestHours"`
+	Timezone         string    `json:"timezone"`
 	UpdatedAt        time.Time `json:"updatedAt"`
 	CreatedAt        time.Time `json:"createdAt"`
 }

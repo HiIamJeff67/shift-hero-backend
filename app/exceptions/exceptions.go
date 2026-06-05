@@ -650,7 +650,7 @@ func (d *TypeExceptionDomain) InvalidDto(optionalMessage ...string) *Exception {
 		Reason:         "InvalidDto",
 		IsInternal:     false,
 		Message:        message,
-		HTTPStatusCode: http.StatusInternalServerError,
+		HTTPStatusCode: http.StatusBadRequest,
 		LastTrace:      traces.GetTrace(1),
 	}
 }

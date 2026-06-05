@@ -17,12 +17,14 @@ func NewCompanyModule() *CompanyModule {
 	companyRepository := repositories.NewCompanyRepository()
 	usersToCompaniesRepository := repositories.NewUsersToCompaniesRepository()
 	userRepository := repositories.NewUserRepository()
+	companyJoinRequestRepository := repositories.NewCompanyJoinRequestRepository()
 
 	companyService := services.NewCompanyService(
 		models.DB,
 		companyRepository,
 		usersToCompaniesRepository,
 		userRepository,
+		companyJoinRequestRepository,
 	)
 
 	companyBinder := binders.NewCompanyBinder()

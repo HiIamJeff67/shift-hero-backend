@@ -16,6 +16,8 @@ var MigratingTables = []any{
 	&AvailabilitySlot{},
 	&ShiftAssignment{},
 	&SwapRequest{},
+	&SchedulePublication{},
+	&CompanyJoinRequest{},
 
 	// private tables
 	&PlanLimitation{},

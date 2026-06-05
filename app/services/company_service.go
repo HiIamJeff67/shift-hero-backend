@@ -25,13 +25,19 @@ type CompanyServiceInterface interface {
 	AddCompanyMember(ctx context.Context, reqDto *dtos.AddCompanyMemberReqDto) (*dtos.MutationUpdatedAtResDto, *exceptions.Exception)
 	UpdateCompanyMember(ctx context.Context, reqDto *dtos.UpdateCompanyMemberReqDto) (*dtos.MutationUpdatedAtResDto, *exceptions.Exception)
 	DeleteCompanyMember(ctx context.Context, reqDto *dtos.DeleteCompanyMemberReqDto) (*dtos.MutationUpdatedAtResDto, *exceptions.Exception)
+	CreateCompanyJoinRequest(ctx context.Context, reqDto *dtos.CreateCompanyJoinRequestReqDto) (*dtos.CompanyJoinRequestResDto, *exceptions.Exception)
+	GetCompanyJoinRequests(ctx context.Context, reqDto *dtos.GetCompanyJoinRequestsReqDto) ([]dtos.CompanyJoinRequestResDto, *exceptions.Exception)
+	ApproveCompanyJoinRequest(ctx context.Context, reqDto *dtos.ReviewCompanyJoinRequestReqDto) (*dtos.CompanyJoinRequestResDto, *exceptions.Exception)
+	RejectCompanyJoinRequest(ctx context.Context, reqDto *dtos.ReviewCompanyJoinRequestReqDto) (*dtos.CompanyJoinRequestResDto, *exceptions.Exception)
+	GetMyCompanyJoinRequests(ctx context.Context, reqDto *dtos.GetMyCompanyJoinRequestsReqDto) ([]dtos.CompanyJoinRequestResDto, *exceptions.Exception)
 }
 
 type CompanyService struct {
-	db                         *gorm.DB
-	companyRepository          repositories.CompanyRepositoryInterface
-	usersToCompaniesRepository repositories.UsersToCompaniesRepositoryInterface
-	userRepository             repositories.UserRepositoryInterface
+	db                           *gorm.DB
+	companyRepository            repositories.CompanyRepositoryInterface
+	usersToCompaniesRepository   repositories.UsersToCompaniesRepositoryInterface
+	userRepository               repositories.UserRepositoryInterface
+	companyJoinRequestRepository repositories.CompanyJoinRequestRepositoryInterface
 }
 
 func NewCompanyService(
@@ -39,15 +45,17 @@ func NewCompanyService(
 	companyRepository repositories.CompanyRepositoryInterface,
 	usersToCompaniesRepository repositories.UsersToCompaniesRepositoryInterface,
 	userRepository repositories.UserRepositoryInterface,
+	companyJoinRequestRepository repositories.CompanyJoinRequestRepositoryInterface,
 ) CompanyServiceInterface {
 	if db == nil {
 		db = models.DB
 	}
 	return &CompanyService{
-		db:                         db,
-		companyRepository:          companyRepository,
-		usersToCompaniesRepository: usersToCompaniesRepository,
-		userRepository:             userRepository,
+		db:                           db,
+		companyRepository:            companyRepository,
+		usersToCompaniesRepository:   usersToCompaniesRepository,
+		userRepository:               userRepository,
+		companyJoinRequestRepository: companyJoinRequestRepository,
 	}
 }
 
@@ -60,6 +68,32 @@ func convertCompanyToRes(company schemas.Company) dtos.CompanyResDto {
 		UpdatedAt:   company.UpdatedAt,
 		CreatedAt:   company.CreatedAt,
 	}
+}
+
+func convertCompanyJoinRequestToRes(row repositories.CompanyJoinRequestWithDetails) dtos.CompanyJoinRequestResDto {
+	return dtos.CompanyJoinRequestResDto{
+		Id:               row.Id,
+		CompanyId:        row.CompanyId,
+		CompanyName:      row.CompanyName,
+		RequesterUserId:  row.RequesterUserId,
+		RequesterName:    row.RequesterName,
+		RequesterEmail:   row.RequesterEmail,
+		RequestedRole:    row.RequestedRole,
+		Note:             row.Note,
+		Status:           row.Status,
+		ReviewedByUserId: row.ReviewedByUserId,
+		ReviewedAt:       row.ReviewedAt,
+		CreatedAt:        row.CreatedAt,
+		UpdatedAt:        row.UpdatedAt,
+	}
+}
+
+func convertCompanyJoinRequestsToRes(rows []repositories.CompanyJoinRequestWithDetails) []dtos.CompanyJoinRequestResDto {
+	res := make([]dtos.CompanyJoinRequestResDto, len(rows))
+	for i, row := range rows {
+		res[i] = convertCompanyJoinRequestToRes(row)
+	}
+	return res
 }
 
 func (s *CompanyService) CreateCompany(
@@ -390,4 +424,224 @@ func (s *CompanyService) DeleteCompanyMember(
 	}
 
 	return &dtos.MutationUpdatedAtResDto{UpdatedAt: truncateToMinute(time.Now().UTC())}, nil
+}
+
+func (s *CompanyService) CreateCompanyJoinRequest(
+	ctx context.Context,
+	reqDto *dtos.CreateCompanyJoinRequestReqDto,
+) (*dtos.CompanyJoinRequestResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.Company.InvalidDto().WithOrigin(err)
+	}
+
+	requestedRole := enums.EmployeeRole_Staff
+	if reqDto.Body.RequestedRole != nil {
+		requestedRole = *reqDto.Body.RequestedRole
+	}
+
+	db := s.db.WithContext(ctx)
+	if _, exception := s.companyRepository.GetOneById(reqDto.Body.CompanyId, options.WithDB(db)); exception != nil {
+		return nil, exceptions.Company.NotFound("Company not found for this companyId").WithOrigin(exception.Origin)
+	}
+
+	if _, exception := s.usersToCompaniesRepository.GetOneByCompanyIdAndUserId(
+		reqDto.Body.CompanyId,
+		reqDto.ContextFields.UserId,
+		options.WithDB(db),
+	); exception == nil {
+		return nil, exceptions.Company.DuplicateMember(reqDto.Body.CompanyId.String(), reqDto.ContextFields.UserId.String())
+	} else if exception.Reason != "NotFound" {
+		return nil, exception
+	}
+
+	if _, exception := s.companyJoinRequestRepository.GetPendingByCompanyIdAndRequesterUserId(
+		reqDto.Body.CompanyId,
+		reqDto.ContextFields.UserId,
+		options.WithDB(db),
+	); exception == nil {
+		return nil, exceptions.Company.DuplicateJoinRequest(reqDto.Body.CompanyId.String(), reqDto.ContextFields.UserId.String())
+	} else if exception.Reason != "NotFound" {
+		return nil, exception
+	}
+
+	joinRequest := schemas.CompanyJoinRequest{
+		CompanyId:       reqDto.Body.CompanyId,
+		RequesterUserId: reqDto.ContextFields.UserId,
+		RequestedRole:   requestedRole,
+		Note:            reqDto.Body.Note,
+		Status:          enums.CompanyJoinRequestStatus_Pending,
+	}
+	if exception := s.companyJoinRequestRepository.CreateOne(&joinRequest, options.WithDB(db)); exception != nil {
+		return nil, exception
+	}
+
+	row, exception := s.companyJoinRequestRepository.GetOneWithDetailsById(joinRequest.Id, options.WithDB(db))
+	if exception != nil {
+		return nil, exception
+	}
+	res := convertCompanyJoinRequestToRes(*row)
+	return &res, nil
+}
+
+func (s *CompanyService) GetCompanyJoinRequests(
+	ctx context.Context,
+	reqDto *dtos.GetCompanyJoinRequestsReqDto,
+) ([]dtos.CompanyJoinRequestResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.Company.InvalidDto().WithOrigin(err)
+	}
+
+	db := s.db.WithContext(ctx)
+	if _, exception := s.companyRepository.GetOneById(reqDto.Param.CompanyId, options.WithDB(db)); exception != nil {
+		return nil, exceptions.Company.NotFound("Company not found for this companyId").WithOrigin(exception.Origin)
+	}
+	if _, exception := requireCompanyManagerByRepository(
+		s.usersToCompaniesRepository,
+		reqDto.Param.CompanyId,
+		reqDto.ContextFields.UserId,
+		options.WithDB(db),
+	); exception != nil {
+		return nil, exception
+	}
+
+	rows, exception := s.companyJoinRequestRepository.GetManyWithDetailsByCompanyId(
+		reqDto.Param.CompanyId,
+		reqDto.Body.Status,
+		options.WithDB(db),
+	)
+	if exception != nil {
+		return nil, exception
+	}
+
+	return convertCompanyJoinRequestsToRes(rows), nil
+}
+
+func (s *CompanyService) ApproveCompanyJoinRequest(
+	ctx context.Context,
+	reqDto *dtos.ReviewCompanyJoinRequestReqDto,
+) (*dtos.CompanyJoinRequestResDto, *exceptions.Exception) {
+	return s.reviewCompanyJoinRequest(ctx, reqDto, enums.CompanyJoinRequestStatus_Approved)
+}
+
+func (s *CompanyService) RejectCompanyJoinRequest(
+	ctx context.Context,
+	reqDto *dtos.ReviewCompanyJoinRequestReqDto,
+) (*dtos.CompanyJoinRequestResDto, *exceptions.Exception) {
+	return s.reviewCompanyJoinRequest(ctx, reqDto, enums.CompanyJoinRequestStatus_Rejected)
+}
+
+func (s *CompanyService) reviewCompanyJoinRequest(
+	ctx context.Context,
+	reqDto *dtos.ReviewCompanyJoinRequestReqDto,
+	nextStatus enums.CompanyJoinRequestStatus,
+) (*dtos.CompanyJoinRequestResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.Company.InvalidDto().WithOrigin(err)
+	}
+
+	db := s.db.WithContext(ctx)
+	tx := db.Begin()
+	if tx.Error != nil {
+		return nil, exceptions.Company.FailedToCommitTransaction().WithOrigin(tx.Error)
+	}
+	defer func() {
+		if recover() != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if _, exception := s.companyRepository.GetOneById(reqDto.Body.CompanyId, options.WithDB(tx)); exception != nil {
+		tx.Rollback()
+		return nil, exceptions.Company.NotFound("Company not found for this companyId").WithOrigin(exception.Origin)
+	}
+	if _, exception := requireCompanyManagerByRepository(
+		s.usersToCompaniesRepository,
+		reqDto.Body.CompanyId,
+		reqDto.ContextFields.UserId,
+		options.WithDB(tx),
+	); exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	joinRequest, exception := s.companyJoinRequestRepository.GetOneByIdAndCompanyId(
+		reqDto.Body.JoinRequestId,
+		reqDto.Body.CompanyId,
+		options.WithDB(tx),
+	)
+	if exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+	if joinRequest.Status != enums.CompanyJoinRequestStatus_Pending {
+		tx.Rollback()
+		return nil, exceptions.Company.JoinRequestAlreadyProcessed(reqDto.Body.JoinRequestId.String())
+	}
+
+	if nextStatus == enums.CompanyJoinRequestStatus_Approved {
+		if _, exception := s.usersToCompaniesRepository.GetOneByCompanyIdAndUserId(
+			reqDto.Body.CompanyId,
+			joinRequest.RequesterUserId,
+			options.WithDB(tx),
+		); exception == nil {
+			tx.Rollback()
+			return nil, exceptions.Company.DuplicateMember(reqDto.Body.CompanyId.String(), joinRequest.RequesterUserId.String())
+		} else if exception.Reason != "NotFound" {
+			tx.Rollback()
+			return nil, exception
+		}
+
+		member := schemas.UsersToCompanies{
+			UserId:       joinRequest.RequesterUserId,
+			CompanyId:    joinRequest.CompanyId,
+			EmployeeRole: joinRequest.RequestedRole,
+		}
+		if exception := s.usersToCompaniesRepository.CreateOne(&member, options.WithDB(tx)); exception != nil {
+			tx.Rollback()
+			return nil, exceptions.Company.FailedToCreate("Failed to create company membership").WithOrigin(exception.Origin)
+		}
+	}
+
+	reviewedAt := time.Now().UTC()
+	if exception := s.companyJoinRequestRepository.UpdateReviewState(
+		joinRequest.Id,
+		nextStatus,
+		reqDto.ContextFields.UserId,
+		reviewedAt,
+		options.WithDB(tx),
+	); exception != nil {
+		tx.Rollback()
+		return nil, exception
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return nil, exceptions.Company.FailedToCommitTransaction().WithOrigin(err)
+	}
+
+	row, exception := s.companyJoinRequestRepository.GetOneWithDetailsById(joinRequest.Id, options.WithDB(db))
+	if exception != nil {
+		return nil, exception
+	}
+	res := convertCompanyJoinRequestToRes(*row)
+	return &res, nil
+}
+
+func (s *CompanyService) GetMyCompanyJoinRequests(
+	ctx context.Context,
+	reqDto *dtos.GetMyCompanyJoinRequestsReqDto,
+) ([]dtos.CompanyJoinRequestResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.Company.InvalidDto().WithOrigin(err)
+	}
+
+	db := s.db.WithContext(ctx)
+	rows, exception := s.companyJoinRequestRepository.GetManyWithDetailsByRequesterUserId(
+		reqDto.ContextFields.UserId,
+		options.WithDB(db),
+	)
+	if exception != nil {
+		return nil, exception
+	}
+
+	return convertCompanyJoinRequestsToRes(rows), nil
 }

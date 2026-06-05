@@ -11,13 +11,15 @@ const (
 
 	TableName_UsersToBillingPlansTable TableName = "UsersToBillingPlansTable"
 
-	TableName_CompanyTable           TableName = "CompanyTable"
-	TableName_UsersToCompaniesTable  TableName = "UsersToCompaniesTable"
-	TableName_CompanySettingsTable   TableName = "CompanySettingsTable"
-	TableName_ShiftRequirementsTable TableName = "ShiftRequirementsTable"
-	TableName_AvailabilitySlotsTable TableName = "AvailabilitySlotsTable"
-	TableName_ShiftAssignmentsTable  TableName = "ShiftAssignmentsTable"
-	TableName_SwapRequestsTable      TableName = "SwapRequestsTable"
+	TableName_CompanyTable              TableName = "CompanyTable"
+	TableName_UsersToCompaniesTable     TableName = "UsersToCompaniesTable"
+	TableName_CompanySettingsTable      TableName = "CompanySettingsTable"
+	TableName_ShiftRequirementsTable    TableName = "ShiftRequirementsTable"
+	TableName_AvailabilitySlotsTable    TableName = "AvailabilitySlotsTable"
+	TableName_ShiftAssignmentsTable     TableName = "ShiftAssignmentsTable"
+	TableName_SwapRequestsTable         TableName = "SwapRequestsTable"
+	TableName_SchedulePublicationsTable TableName = "SchedulePublicationsTable"
+	TableName_CompanyJoinRequestsTable  TableName = "CompanyJoinRequestsTable"
 
 	// private tables(accessable by the client user and admin, but only mutatable by the admin)
 	TableName_PlanLimitationTable TableName = "PlanLimitationTable"
@@ -33,13 +35,15 @@ var _validTableNames = map[string]TableName{
 
 	"UsersToBillingPlansTable": TableName_UsersToBillingPlansTable,
 
-	"CompanyTable":           TableName_CompanyTable,
-	"UsersToCompaniesTable":  TableName_UsersToCompaniesTable,
-	"CompanySettingsTable":   TableName_CompanySettingsTable,
-	"ShiftRequirementsTable": TableName_ShiftRequirementsTable,
-	"AvailabilitySlotsTable": TableName_AvailabilitySlotsTable,
-	"ShiftAssignmentsTable":  TableName_ShiftAssignmentsTable,
-	"SwapRequestsTable":      TableName_SwapRequestsTable,
+	"CompanyTable":              TableName_CompanyTable,
+	"UsersToCompaniesTable":     TableName_UsersToCompaniesTable,
+	"CompanySettingsTable":      TableName_CompanySettingsTable,
+	"ShiftRequirementsTable":    TableName_ShiftRequirementsTable,
+	"AvailabilitySlotsTable":    TableName_AvailabilitySlotsTable,
+	"ShiftAssignmentsTable":     TableName_ShiftAssignmentsTable,
+	"SwapRequestsTable":         TableName_SwapRequestsTable,
+	"SchedulePublicationsTable": TableName_SchedulePublicationsTable,
+	"CompanyJoinRequestsTable":  TableName_CompanyJoinRequestsTable,
 
 	// private tables
 	"PlanLimitationTable": TableName_PlanLimitationTable,

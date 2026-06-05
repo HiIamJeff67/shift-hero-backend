@@ -123,6 +123,61 @@ type DeleteCompanyMemberReqDto struct {
 	]
 }
 
+type CreateCompanyJoinRequestReqDto struct {
+	Request[
+		any,
+		struct {
+			UserId uuid.UUID
+		},
+		struct {
+			CompanyId     uuid.UUID           `json:"companyId" validate:"required,uuid4"`
+			RequestedRole *enums.EmployeeRole `json:"requestedRole" validate:"omitnil,isemployeerole"`
+			Note          string              `json:"note" validate:"omitempty,max=1024"`
+		},
+		any,
+	]
+}
+
+type GetCompanyJoinRequestsReqDto struct {
+	Request[
+		any,
+		struct {
+			UserId uuid.UUID
+		},
+		struct {
+			Status *enums.CompanyJoinRequestStatus `form:"status" validate:"omitnil,iscompanyjoinrequeststatus"`
+		},
+		struct {
+			CompanyId uuid.UUID `uri:"companyId" validate:"required,uuid4"`
+		},
+	]
+}
+
+type ReviewCompanyJoinRequestReqDto struct {
+	Request[
+		any,
+		struct {
+			UserId uuid.UUID
+		},
+		struct {
+			CompanyId     uuid.UUID `json:"companyId" validate:"required,uuid4"`
+			JoinRequestId uuid.UUID `json:"joinRequestId" validate:"required,uuid4"`
+		},
+		any,
+	]
+}
+
+type GetMyCompanyJoinRequestsReqDto struct {
+	Request[
+		any,
+		struct {
+			UserId uuid.UUID
+		},
+		any,
+		any,
+	]
+}
+
 /* ============================== Company Response DTO ============================== */
 
 type CompanyMemberResDto struct {
@@ -140,4 +195,20 @@ type CompanyResDto struct {
 	Email       string    `json:"email"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 	CreatedAt   time.Time `json:"createdAt"`
+}
+
+type CompanyJoinRequestResDto struct {
+	Id               uuid.UUID                      `json:"id"`
+	CompanyId        uuid.UUID                      `json:"companyId"`
+	CompanyName      string                         `json:"companyName"`
+	RequesterUserId  uuid.UUID                      `json:"requesterUserId"`
+	RequesterName    string                         `json:"requesterName"`
+	RequesterEmail   string                         `json:"requesterEmail"`
+	RequestedRole    enums.EmployeeRole             `json:"requestedRole"`
+	Note             string                         `json:"note"`
+	Status           enums.CompanyJoinRequestStatus `json:"status"`
+	ReviewedByUserId *uuid.UUID                     `json:"reviewedByUserId"`
+	ReviewedAt       *time.Time                     `json:"reviewedAt"`
+	CreatedAt        time.Time                      `json:"createdAt"`
+	UpdatedAt        time.Time                      `json:"updatedAt"`
 }

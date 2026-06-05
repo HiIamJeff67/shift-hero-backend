@@ -48,6 +48,50 @@ func configureDevelopmentCompanyRoutes() {
 			module.Binder.BindGetMyCompanies(module.Controller.GetMyCompanies),
 		)...,
 	)
+	companyRoutes.POST(
+		"/joinRequests",
+		middlewares.RepositionMiddleware(
+			[]gin.HandlerFunc{
+				middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "createCompanyJoinRequest"),
+				middlewares.ApplyMeterMiddleware(otel.Meter(constants.ServiceName), "server.requests.company.createCompanyJoinRequest"),
+			},
+			defaultMiddlewares,
+			module.Binder.BindCreateCompanyJoinRequest(module.Controller.CreateCompanyJoinRequest),
+		)...,
+	)
+	companyRoutes.GET(
+		"/joinRequests/me",
+		middlewares.RepositionMiddleware(
+			[]gin.HandlerFunc{
+				middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "getMyCompanyJoinRequests"),
+				middlewares.ApplyMeterMiddleware(otel.Meter(constants.ServiceName), "server.requests.company.getMyCompanyJoinRequests"),
+			},
+			defaultMiddlewares,
+			module.Binder.BindGetMyCompanyJoinRequests(module.Controller.GetMyCompanyJoinRequests),
+		)...,
+	)
+	companyRoutes.POST(
+		"/joinRequests/approve",
+		middlewares.RepositionMiddleware(
+			[]gin.HandlerFunc{
+				middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "approveCompanyJoinRequest"),
+				middlewares.ApplyMeterMiddleware(otel.Meter(constants.ServiceName), "server.requests.company.approveCompanyJoinRequest"),
+			},
+			defaultMiddlewares,
+			module.Binder.BindApproveCompanyJoinRequest(module.Controller.ApproveCompanyJoinRequest),
+		)...,
+	)
+	companyRoutes.POST(
+		"/joinRequests/reject",
+		middlewares.RepositionMiddleware(
+			[]gin.HandlerFunc{
+				middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "rejectCompanyJoinRequest"),
+				middlewares.ApplyMeterMiddleware(otel.Meter(constants.ServiceName), "server.requests.company.rejectCompanyJoinRequest"),
+			},
+			defaultMiddlewares,
+			module.Binder.BindRejectCompanyJoinRequest(module.Controller.RejectCompanyJoinRequest),
+		)...,
+	)
 	companyRoutes.GET(
 		"/:companyId",
 		middlewares.RepositionMiddleware(
@@ -57,6 +101,17 @@ func configureDevelopmentCompanyRoutes() {
 			},
 			defaultMiddlewares,
 			module.Binder.BindGetCompany(module.Controller.GetCompany),
+		)...,
+	)
+	companyRoutes.GET(
+		"/:companyId/joinRequests",
+		middlewares.RepositionMiddleware(
+			[]gin.HandlerFunc{
+				middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "getCompanyJoinRequests"),
+				middlewares.ApplyMeterMiddleware(otel.Meter(constants.ServiceName), "server.requests.company.getCompanyJoinRequests"),
+			},
+			defaultMiddlewares,
+			module.Binder.BindGetCompanyJoinRequests(module.Controller.GetCompanyJoinRequests),
 		)...,
 	)
 	companyRoutes.PATCH(

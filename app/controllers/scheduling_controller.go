@@ -19,12 +19,15 @@ type SchedulingControllerInterface interface {
 	DeleteAvailabilitySlot(ctx *gin.Context, reqDto *dtos.DeleteAvailabilitySlotReqDto)
 	GenerateAssignments(ctx *gin.Context, reqDto *dtos.GenerateAssignmentsReqDto)
 	ReplaceAssignments(ctx *gin.Context, reqDto *dtos.ReplaceAssignmentsReqDto)
+	ClaimAssignment(ctx *gin.Context, reqDto *dtos.ClaimAssignmentReqDto)
 	GetAssignments(ctx *gin.Context, reqDto *dtos.GetAssignmentsReqDto)
 	CreateSwapRequest(ctx *gin.Context, reqDto *dtos.CreateSwapRequestReqDto)
 	GetSwapRequests(ctx *gin.Context, reqDto *dtos.GetSwapRequestsReqDto)
 	ClaimSwapRequest(ctx *gin.Context, reqDto *dtos.ClaimSwapRequestReqDto)
 	ApproveSwapRequest(ctx *gin.Context, reqDto *dtos.ApproveSwapRequestReqDto)
 	CancelSwapRequest(ctx *gin.Context, reqDto *dtos.CancelSwapRequestReqDto)
+	GetSchedulePublication(ctx *gin.Context, reqDto *dtos.GetSchedulePublicationReqDto)
+	UpsertSchedulePublication(ctx *gin.Context, reqDto *dtos.UpsertSchedulePublicationReqDto)
 	GetCompanySettings(ctx *gin.Context, reqDto *dtos.GetCompanySettingsReqDto)
 	UpdateCompanySettings(ctx *gin.Context, reqDto *dtos.UpdateCompanySettingsReqDto)
 }
@@ -118,6 +121,15 @@ func (c *SchedulingController) ReplaceAssignments(ctx *gin.Context, reqDto *dtos
 	ctx.JSON(http.StatusOK, gin.H{"success": true, "data": resDto, "exception": nil})
 }
 
+func (c *SchedulingController) ClaimAssignment(ctx *gin.Context, reqDto *dtos.ClaimAssignmentReqDto) {
+	resDto, exception := c.schedulingService.ClaimAssignment(ctx.Request.Context(), reqDto)
+	if exception != nil {
+		exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"success": true, "data": resDto, "exception": nil})
+}
+
 func (c *SchedulingController) GetAssignments(ctx *gin.Context, reqDto *dtos.GetAssignmentsReqDto) {
 	resDto, exception := c.schedulingService.GetAssignments(ctx.Request.Context(), reqDto)
 	if exception != nil {
@@ -165,6 +177,24 @@ func (c *SchedulingController) ApproveSwapRequest(ctx *gin.Context, reqDto *dtos
 
 func (c *SchedulingController) CancelSwapRequest(ctx *gin.Context, reqDto *dtos.CancelSwapRequestReqDto) {
 	resDto, exception := c.schedulingService.CancelSwapRequest(ctx.Request.Context(), reqDto)
+	if exception != nil {
+		exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"success": true, "data": resDto, "exception": nil})
+}
+
+func (c *SchedulingController) GetSchedulePublication(ctx *gin.Context, reqDto *dtos.GetSchedulePublicationReqDto) {
+	resDto, exception := c.schedulingService.GetSchedulePublication(ctx.Request.Context(), reqDto)
+	if exception != nil {
+		exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"success": true, "data": resDto, "exception": nil})
+}
+
+func (c *SchedulingController) UpsertSchedulePublication(ctx *gin.Context, reqDto *dtos.UpsertSchedulePublicationReqDto) {
+	resDto, exception := c.schedulingService.UpsertSchedulePublication(ctx.Request.Context(), reqDto)
 	if exception != nil {
 		exception.Log().SafelyAbortAndResponseWithJSON(ctx)
 		return

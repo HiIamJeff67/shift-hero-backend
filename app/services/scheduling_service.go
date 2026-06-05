@@ -2,11 +2,14 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+	_ "time/tzdata"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	dtos "github.com/HiIamJeff67/shift-hero-backend/app/dtos"
 	emails "github.com/HiIamJeff67/shift-hero-backend/app/emails"
@@ -27,12 +30,15 @@ type SchedulingServiceInterface interface {
 	DeleteAvailabilitySlot(ctx context.Context, reqDto *dtos.DeleteAvailabilitySlotReqDto) (*dtos.MutationUpdatedAtResDto, *exceptions.Exception)
 	GenerateAssignments(ctx context.Context, reqDto *dtos.GenerateAssignmentsReqDto) ([]dtos.ShiftAssignmentResDto, *exceptions.Exception)
 	ReplaceAssignments(ctx context.Context, reqDto *dtos.ReplaceAssignmentsReqDto) ([]dtos.ShiftAssignmentResDto, *exceptions.Exception)
+	ClaimAssignment(ctx context.Context, reqDto *dtos.ClaimAssignmentReqDto) (*dtos.ShiftAssignmentResDto, *exceptions.Exception)
 	GetAssignments(ctx context.Context, reqDto *dtos.GetAssignmentsReqDto) ([]dtos.ShiftAssignmentResDto, *exceptions.Exception)
 	CreateSwapRequest(ctx context.Context, reqDto *dtos.CreateSwapRequestReqDto) (*dtos.SwapRequestResDto, *exceptions.Exception)
 	GetSwapRequests(ctx context.Context, reqDto *dtos.GetSwapRequestsReqDto) ([]dtos.SwapRequestResDto, *exceptions.Exception)
 	ClaimSwapRequest(ctx context.Context, reqDto *dtos.ClaimSwapRequestReqDto) (*dtos.SwapRequestResDto, *exceptions.Exception)
 	ApproveSwapRequest(ctx context.Context, reqDto *dtos.ApproveSwapRequestReqDto) (*dtos.SwapRequestResDto, *exceptions.Exception)
 	CancelSwapRequest(ctx context.Context, reqDto *dtos.CancelSwapRequestReqDto) (*dtos.SwapRequestResDto, *exceptions.Exception)
+	GetSchedulePublication(ctx context.Context, reqDto *dtos.GetSchedulePublicationReqDto) (*dtos.SchedulePublicationResDto, *exceptions.Exception)
+	UpsertSchedulePublication(ctx context.Context, reqDto *dtos.UpsertSchedulePublicationReqDto) (*dtos.SchedulePublicationResDto, *exceptions.Exception)
 	GetCompanySettings(ctx context.Context, reqDto *dtos.GetCompanySettingsReqDto) (*dtos.CompanySettingsResDto, *exceptions.Exception)
 	UpdateCompanySettings(ctx context.Context, reqDto *dtos.UpdateCompanySettingsReqDto) (*dtos.CompanySettingsResDto, *exceptions.Exception)
 }
@@ -57,7 +63,7 @@ func (s *SchedulingService) CreateShiftRequirement(
 	}
 
 	db := s.db.WithContext(ctx)
-	if _, exception := requireCompanyManager(db, reqDto.Body.CompanyId, reqDto.ContextFields.UserId); exception != nil {
+	if _, exception := requireCompanyMember(db, reqDto.Body.CompanyId, reqDto.ContextFields.UserId); exception != nil {
 		return nil, exception
 	}
 
@@ -106,11 +112,17 @@ func (s *SchedulingService) GetShiftRequirements(
 		return nil, exception
 	}
 
+	query := db.Model(&schemas.ShiftRequirement{}).
+		Where("company_id = ?", reqDto.Param.CompanyId)
+	if reqDto.Body.StartAt != nil {
+		query = query.Where("end_at >= ?", truncateToMinute(reqDto.Body.StartAt.UTC()))
+	}
+	if reqDto.Body.EndAt != nil {
+		query = query.Where("start_at <= ?", truncateToMinute(reqDto.Body.EndAt.UTC()))
+	}
+
 	entities := []schemas.ShiftRequirement{}
-	if err := db.Model(&schemas.ShiftRequirement{}).
-		Where("company_id = ?", reqDto.Param.CompanyId).
-		Order("start_at ASC").
-		Find(&entities).Error; err != nil {
+	if err := query.Order("start_at ASC").Find(&entities).Error; err != nil {
 		return nil, exceptions.Scheduling.NotFound().WithOrigin(err)
 	}
 
@@ -529,6 +541,96 @@ func (s *SchedulingService) ReplaceAssignments(
 	return res, nil
 }
 
+func (s *SchedulingService) ClaimAssignment(
+	ctx context.Context,
+	reqDto *dtos.ClaimAssignmentReqDto,
+) (*dtos.ShiftAssignmentResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.Scheduling.InvalidDto().WithOrigin(err)
+	}
+
+	db := s.db.WithContext(ctx)
+	if _, exception := requireCompanyMember(db, reqDto.Body.CompanyId, reqDto.ContextFields.UserId); exception != nil {
+		return nil, exception
+	}
+
+	tx := db.Begin()
+	if tx.Error != nil {
+		return nil, exceptions.Scheduling.FailedToCommitTransaction().WithOrigin(tx.Error)
+	}
+
+	shift := schemas.ShiftRequirement{}
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("id = ? AND company_id = ?", reqDto.Body.ShiftRequirementId, reqDto.Body.CompanyId).
+		First(&shift).Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.Scheduling.NotFound().WithOrigin(err)
+	}
+
+	var assignedCount int64
+	if err := tx.Model(&schemas.ShiftAssignment{}).
+		Where("company_id = ? AND shift_requirement_id = ?", reqDto.Body.CompanyId, reqDto.Body.ShiftRequirementId).
+		Count(&assignedCount).Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.Scheduling.FailedToUpdate().WithOrigin(err)
+	}
+	if assignedCount >= int64(shift.RequiredCount) {
+		tx.Rollback()
+		return nil, exceptions.Scheduling.BadRequest("This shift requirement is already full")
+	}
+
+	var existingSameShift int64
+	if err := tx.Model(&schemas.ShiftAssignment{}).
+		Where("company_id = ? AND shift_requirement_id = ? AND user_id = ?", reqDto.Body.CompanyId, reqDto.Body.ShiftRequirementId, reqDto.ContextFields.UserId).
+		Count(&existingSameShift).Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.Scheduling.FailedToUpdate().WithOrigin(err)
+	}
+	if existingSameShift > 0 {
+		tx.Rollback()
+		return nil, exceptions.Scheduling.BadRequest("You already accepted this shift")
+	}
+
+	var overlappingAssignments int64
+	if err := tx.Model(&schemas.ShiftAssignment{}).
+		Where("company_id = ? AND user_id = ? AND start_at < ? AND end_at > ?", reqDto.Body.CompanyId, reqDto.ContextFields.UserId, shift.EndAt, shift.StartAt).
+		Count(&overlappingAssignments).Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.Scheduling.FailedToUpdate().WithOrigin(err)
+	}
+	if overlappingAssignments > 0 {
+		tx.Rollback()
+		return nil, exceptions.Scheduling.BadRequest("You already have an overlapping shift assignment")
+	}
+
+	assignment := schemas.ShiftAssignment{
+		CompanyId:          reqDto.Body.CompanyId,
+		ShiftRequirementId: reqDto.Body.ShiftRequirementId,
+		UserId:             reqDto.ContextFields.UserId,
+		StartAt:            shift.StartAt,
+		EndAt:              shift.EndAt,
+	}
+	if err := tx.Table(schemas.ShiftAssignment{}.TableName()).Create(&assignment).Error; err != nil {
+		tx.Rollback()
+		return nil, exceptions.Scheduling.FailedToCreate().WithOrigin(err)
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return nil, exceptions.Scheduling.FailedToCommitTransaction().WithOrigin(err)
+	}
+
+	return &dtos.ShiftAssignmentResDto{
+		Id:                 assignment.Id,
+		CompanyId:          assignment.CompanyId,
+		ShiftRequirementId: assignment.ShiftRequirementId,
+		UserId:             assignment.UserId,
+		StartAt:            assignment.StartAt,
+		EndAt:              assignment.EndAt,
+		UpdatedAt:          assignment.UpdatedAt,
+		CreatedAt:          assignment.CreatedAt,
+	}, nil
+}
+
 func (s *SchedulingService) GetAssignments(
 	ctx context.Context,
 	reqDto *dtos.GetAssignmentsReqDto,
@@ -839,6 +941,117 @@ func (s *SchedulingService) CancelSwapRequest(
 	return &res, nil
 }
 
+func (s *SchedulingService) GetSchedulePublication(
+	ctx context.Context,
+	reqDto *dtos.GetSchedulePublicationReqDto,
+) (*dtos.SchedulePublicationResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.Scheduling.InvalidDto().WithOrigin(err)
+	}
+
+	db := s.db.WithContext(ctx)
+	if _, exception := requireCompanyMember(db, reqDto.Param.CompanyId, reqDto.ContextFields.UserId); exception != nil {
+		return nil, exception
+	}
+
+	weekStart, exception := parseWeekStart(reqDto.Body.WeekStart)
+	if exception != nil {
+		return nil, exception
+	}
+	timezone, exception := normalizeScheduleTimezone(reqDto.Body.Timezone)
+	if exception != nil {
+		return nil, exception
+	}
+
+	publication := schemas.SchedulePublication{}
+	err := db.Model(&schemas.SchedulePublication{}).
+		Where("company_id = ? AND week_start = ?", reqDto.Param.CompanyId, weekStart).
+		First(&publication).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			now := truncateToMinute(time.Now().UTC())
+			return &dtos.SchedulePublicationResDto{
+				CompanyId: reqDto.Param.CompanyId,
+				WeekStart: formatWeekStart(weekStart),
+				Timezone:  timezone,
+				Status:    enums.SchedulePublicationStatus_Draft,
+				UpdatedAt: now,
+				CreatedAt: now,
+			}, nil
+		}
+		return nil, exceptions.Scheduling.NotFound().WithOrigin(err)
+	}
+
+	res := mapSchedulePublicationToResDto(publication)
+	return &res, nil
+}
+
+func (s *SchedulingService) UpsertSchedulePublication(
+	ctx context.Context,
+	reqDto *dtos.UpsertSchedulePublicationReqDto,
+) (*dtos.SchedulePublicationResDto, *exceptions.Exception) {
+	if err := validation.Validator.Struct(reqDto); err != nil {
+		return nil, exceptions.Scheduling.InvalidDto().WithOrigin(err)
+	}
+
+	db := s.db.WithContext(ctx)
+	if _, exception := requireCompanyManager(db, reqDto.Body.CompanyId, reqDto.ContextFields.UserId); exception != nil {
+		return nil, exception
+	}
+
+	weekStart, exception := parseWeekStart(reqDto.Body.WeekStart)
+	if exception != nil {
+		return nil, exception
+	}
+	timezone, exception := normalizeScheduleTimezone(reqDto.Body.Timezone)
+	if exception != nil {
+		return nil, exception
+	}
+
+	now := time.Now().UTC()
+	var publishedByUserId *uuid.UUID
+	var publishedAt *time.Time
+	if reqDto.Body.Status == enums.SchedulePublicationStatus_Published {
+		publishedByUserId = &reqDto.ContextFields.UserId
+		publishedAt = &now
+	}
+
+	publication := schemas.SchedulePublication{
+		CompanyId:         reqDto.Body.CompanyId,
+		WeekStart:         weekStart,
+		Timezone:          timezone,
+		Status:            reqDto.Body.Status,
+		PublishedByUserId: publishedByUserId,
+		PublishedAt:       publishedAt,
+	}
+	if err := db.Model(&schemas.SchedulePublication{}).
+		Clauses(clause.OnConflict{
+			Columns: []clause.Column{
+				{Name: "company_id"},
+				{Name: "week_start"},
+			},
+			DoUpdates: clause.Assignments(map[string]any{
+				"timezone":             timezone,
+				"status":               reqDto.Body.Status,
+				"published_by_user_id": publishedByUserId,
+				"published_at":         publishedAt,
+				"updated_at":           now,
+			}),
+		}).
+		Create(&publication).Error; err != nil {
+		return nil, exceptions.Scheduling.FailedToUpdate().WithOrigin(err)
+	}
+
+	if err := db.Model(&schemas.SchedulePublication{}).
+		Where("company_id = ? AND week_start = ?", reqDto.Body.CompanyId, weekStart).
+		First(&publication).Error; err != nil {
+		return nil, exceptions.Scheduling.NotFound().WithOrigin(err)
+	}
+
+	res := mapSchedulePublicationToResDto(publication)
+	return &res, nil
+}
+
 func (s *SchedulingService) GetCompanySettings(
 	ctx context.Context,
 	reqDto *dtos.GetCompanySettingsReqDto,
@@ -857,10 +1070,13 @@ func (s *SchedulingService) GetCompanySettings(
 		Where("company_id = ?", reqDto.Param.CompanyId).
 		First(&settings).Error
 	if err != nil {
-		settings = schemas.CompanySettings{CompanyId: reqDto.Param.CompanyId}
+		settings = schemas.CompanySettings{CompanyId: reqDto.Param.CompanyId, Timezone: defaultScheduleTimezone}
 		if createErr := db.Model(&schemas.CompanySettings{}).Create(&settings).Error; createErr != nil {
 			return nil, exceptions.Scheduling.FailedToCreate().WithOrigin(createErr)
 		}
+	}
+	if settings.Timezone == "" {
+		settings.Timezone = defaultScheduleTimezone
 	}
 
 	res := dtos.CompanySettingsResDto{
@@ -868,6 +1084,7 @@ func (s *SchedulingService) GetCompanySettings(
 		AutoApproveSwaps: settings.AutoApproveSwaps,
 		MaxWeeklyHours:   settings.MaxWeeklyHours,
 		MinRestHours:     settings.MinRestHours,
+		Timezone:         settings.Timezone,
 		UpdatedAt:        settings.UpdatedAt,
 		CreatedAt:        settings.CreatedAt,
 	}
@@ -897,6 +1114,13 @@ func (s *SchedulingService) UpdateCompanySettings(
 	if reqDto.Body.Values.MinRestHours != nil {
 		updates["min_rest_hours"] = *reqDto.Body.Values.MinRestHours
 	}
+	if reqDto.Body.Values.Timezone != nil {
+		timezone, exception := normalizeScheduleTimezone(*reqDto.Body.Values.Timezone)
+		if exception != nil {
+			return nil, exception
+		}
+		updates["timezone"] = timezone
+	}
 	if len(updates) == 0 {
 		return nil, exceptions.Scheduling.NoChanges()
 	}
@@ -905,7 +1129,7 @@ func (s *SchedulingService) UpdateCompanySettings(
 	if err := db.Model(&schemas.CompanySettings{}).
 		Where("company_id = ?", reqDto.Body.CompanyId).
 		First(&settings).Error; err != nil {
-		settings = schemas.CompanySettings{CompanyId: reqDto.Body.CompanyId}
+		settings = schemas.CompanySettings{CompanyId: reqDto.Body.CompanyId, Timezone: defaultScheduleTimezone}
 		if createErr := db.Model(&schemas.CompanySettings{}).Create(&settings).Error; createErr != nil {
 			return nil, exceptions.Scheduling.FailedToCreate().WithOrigin(createErr)
 		}
@@ -920,12 +1144,16 @@ func (s *SchedulingService) UpdateCompanySettings(
 	if err := db.Model(&schemas.CompanySettings{}).Where("company_id = ?", reqDto.Body.CompanyId).First(&settings).Error; err != nil {
 		return nil, exceptions.Scheduling.NotFound().WithOrigin(err)
 	}
+	if settings.Timezone == "" {
+		settings.Timezone = defaultScheduleTimezone
+	}
 
 	res := dtos.CompanySettingsResDto{
 		CompanyId:        settings.CompanyId,
 		AutoApproveSwaps: settings.AutoApproveSwaps,
 		MaxWeeklyHours:   settings.MaxWeeklyHours,
 		MinRestHours:     settings.MinRestHours,
+		Timezone:         settings.Timezone,
 		UpdatedAt:        settings.UpdatedAt,
 		CreatedAt:        settings.CreatedAt,
 	}
@@ -968,4 +1196,48 @@ func (s *SchedulingService) getAssignmentSummary(db *gorm.DB, assignmentId uuid.
 		return assignmentId.String()
 	}
 	return fmt.Sprintf("%s ~ %s", assignment.StartAt.Format(time.RFC3339), assignment.EndAt.Format(time.RFC3339))
+}
+
+const (
+	defaultScheduleTimezone = "Asia/Taipei"
+	weekStartDateLayout     = "2006-01-02"
+)
+
+func parseWeekStart(weekStart string) (time.Time, *exceptions.Exception) {
+	parsed, err := time.Parse(weekStartDateLayout, weekStart)
+	if err != nil {
+		return time.Time{}, exceptions.Scheduling.BadRequest("weekStart must be formatted as YYYY-MM-DD").WithOrigin(err)
+	}
+	return parsed, nil
+}
+
+func formatWeekStart(weekStart time.Time) string {
+	return weekStart.Format(weekStartDateLayout)
+}
+
+func normalizeScheduleTimezone(timezone string) (string, *exceptions.Exception) {
+	if timezone == "" {
+		timezone = defaultScheduleTimezone
+	}
+	if _, err := time.LoadLocation(timezone); err != nil {
+		return "", exceptions.Scheduling.BadRequest("Invalid timezone").WithOrigin(err)
+	}
+	return timezone, nil
+}
+
+func mapSchedulePublicationToResDto(publication schemas.SchedulePublication) dtos.SchedulePublicationResDto {
+	timezone := publication.Timezone
+	if timezone == "" {
+		timezone = defaultScheduleTimezone
+	}
+	return dtos.SchedulePublicationResDto{
+		CompanyId:         publication.CompanyId,
+		WeekStart:         formatWeekStart(publication.WeekStart),
+		Timezone:          timezone,
+		Status:            publication.Status,
+		PublishedByUserId: publication.PublishedByUserId,
+		PublishedAt:       publication.PublishedAt,
+		UpdatedAt:         publication.UpdatedAt,
+		CreatedAt:         publication.CreatedAt,
+	}
 }
