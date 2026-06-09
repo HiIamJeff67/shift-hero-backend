@@ -578,6 +578,23 @@ If publication status is `Draft`, frontend can hide staff-visible schedule detai
 
 6. Refresh publication state and assignments.
 
+### Manager Opens AI Briefing
+
+Use `POST /companies/{companyId}/ai/scheduleInsights` for a regular JSON response.
+
+Use `POST /companies/{companyId}/ai/scheduleInsights/stream` for the animated briefing UI. Because this is an authenticated POST request, use a fetch-based SSE parser instead of browser `EventSource`.
+
+Handle these event names:
+
+- `stage`: show the current analysis phase
+- `token`: append text to the briefing
+- `done`: store the final metrics and metadata
+- `error`: stop the loading state and show the safe API error
+
+Read `done.data.aiUsage` to display the monthly usage meter. For the JSON endpoint, handle HTTP `429` with exception reason `AIUsageLimitExceeded`. For streaming, the same exception arrives in the `error` event because the SSE response has already started.
+
+See `docs/AI_SCHEDULE_INSIGHTS.md` for the request body and workflow details.
+
 ### Staff Submits Availability
 
 1. `PUT /companies/availabilitySlots`
@@ -610,4 +627,3 @@ For `weekStart`, send date only:
 ```
 
 Do not send a timestamp for `weekStart`.
-

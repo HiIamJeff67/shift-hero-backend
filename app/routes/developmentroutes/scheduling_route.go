@@ -10,6 +10,7 @@ import (
 	middlewares "github.com/HiIamJeff67/shift-hero-backend/app/middlewares"
 	modules "github.com/HiIamJeff67/shift-hero-backend/app/modules"
 	constants "github.com/HiIamJeff67/shift-hero-backend/shared/constants"
+	types "github.com/HiIamJeff67/shift-hero-backend/shared/types"
 )
 
 func configureDevelopmentSchedulingRoutes() {
@@ -207,5 +208,42 @@ func configureDevelopmentSchedulingRoutes() {
 		},
 		defaultMiddlewares,
 		module.Binder.BindUpdateCompanySettings(module.Controller.UpdateCompanySettings),
+	)...)
+
+	aiJSONMiddlewares := []gin.HandlerFunc{
+		middlewares.UnauthorizedRateLimitMiddleware(),
+		middlewares.TimeoutMiddleware(90 * time.Second),
+		middlewares.AuthMiddleware(),
+		middlewares.AuthorizedRateLimitMiddleware(),
+		middlewares.MaxContextSizeMiddleware(8, types.KB),
+		interceptors.ShareableResponseWriterInterceptor(
+			interceptors.RefreshTokenInterceptor,
+			interceptors.EmbeddedInterceptor,
+		),
+	}
+	routes.POST("/:companyId/ai/scheduleInsights", middlewares.RepositionMiddleware(
+		[]gin.HandlerFunc{
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "generateScheduleInsights"),
+			middlewares.ApplyMeterMiddleware(otel.Meter(constants.ServiceName), "server.requests.scheduling.generateScheduleInsights"),
+		},
+		aiJSONMiddlewares,
+		module.Binder.BindGenerateScheduleInsights(module.Controller.GenerateScheduleInsights),
+	)...)
+
+	// Streaming routes cannot use the buffering timeout/response interceptors.
+	// The insight service applies its own context deadline for the OpenRouter call.
+	aiStreamMiddlewares := []gin.HandlerFunc{
+		middlewares.UnauthorizedRateLimitMiddleware(),
+		middlewares.AuthMiddleware(),
+		middlewares.AuthorizedRateLimitMiddleware(),
+		middlewares.MaxContextSizeMiddleware(8, types.KB),
+	}
+	routes.POST("/:companyId/ai/scheduleInsights/stream", middlewares.RepositionMiddleware(
+		[]gin.HandlerFunc{
+			middlewares.ApplyTracerMiddleware(otel.Tracer(constants.ServiceName), "streamScheduleInsights"),
+			middlewares.ApplyMeterMiddleware(otel.Meter(constants.ServiceName), "server.requests.scheduling.streamScheduleInsights"),
+		},
+		aiStreamMiddlewares,
+		module.Binder.BindGenerateScheduleInsights(module.Controller.StreamScheduleInsights),
 	)...)
 }

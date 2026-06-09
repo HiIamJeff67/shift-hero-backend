@@ -87,6 +87,7 @@ make seed-hotreload-db
 
 - New project flow: `docs/NEW_PROJECT.md`
 - Migration scan notes: `docs/TEMPLATE_MIGRATION_NOTES.md`
+- AI schedule insights: `docs/AI_SCHEDULE_INSIGHTS.md`
 
 ## Repository Structure
 

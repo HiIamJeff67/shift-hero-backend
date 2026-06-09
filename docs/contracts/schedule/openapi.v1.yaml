@@ -242,6 +242,42 @@ paths:
       responses:
         '200': { $ref: '#/components/responses/ScheduleSettingsEnvelope' }
         default: { $ref: '#/components/responses/ErrorEnvelope' }
+  /companies/{companyId}/ai/scheduleInsights:
+    post:
+      summary: Generate an AI manager briefing from deterministic schedule metrics
+      description: Manager only. The requested range cannot exceed 31 days.
+      parameters:
+        - $ref: '#/components/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GenerateScheduleInsightsBody' }
+      responses:
+        '200': { $ref: '#/components/responses/ScheduleInsightEnvelope' }
+        '429': { $ref: '#/components/responses/ErrorEnvelope' }
+        default: { $ref: '#/components/responses/ErrorEnvelope' }
+  /companies/{companyId}/ai/scheduleInsights/stream:
+    post:
+      summary: Stream an AI manager briefing with Server-Sent Events
+      description: >
+        Manager only. Emits stage, token, done, and error events. This endpoint
+        intentionally bypasses response buffering so token events flush immediately.
+      parameters:
+        - $ref: '#/components/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GenerateScheduleInsightsBody' }
+      responses:
+        '200':
+          description: Server-Sent Events stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        default: { $ref: '#/components/responses/ErrorEnvelope' }
 components:
   securitySchemes:
     bearerAuth:
@@ -356,6 +392,16 @@ components:
               - type: object
                 properties:
                   data: { $ref: '#/components/schemas/ScheduleSettings' }
+    ScheduleInsightEnvelope:
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/SuccessEnvelopeBase'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/ScheduleInsight' }
     ErrorEnvelope:
       description: Error
       content:
@@ -464,6 +510,62 @@ components:
         timezone: { type: string, default: Asia/Taipei }
         updatedAt: { type: string, format: date-time }
         createdAt: { type: string, format: date-time }
+    ScheduleInsightEmployee:
+      type: object
+      properties:
+        userId: { $ref: '#/components/schemas/UUID' }
+        displayName: { type: string }
+        employeeRole: { type: string, enum: [Manager, Staff] }
+        shiftCount: { type: integer }
+        totalHours: { type: number }
+        longestShiftHours: { type: number }
+        nightShiftCount: { type: integer }
+        weekendShiftCount: { type: integer }
+        shortRestCount: { type: integer }
+        availabilityConflicts: { type: integer }
+        openSwapRequestCount: { type: integer }
+        maxConsecutiveWorkDays: { type: integer }
+        overtimeWeekCount: { type: integer }
+        riskScore: { type: integer }
+        riskLevel: { type: string, enum: [low, medium, high, critical] }
+    ScheduleInsight:
+      type: object
+      properties:
+        companyId: { $ref: '#/components/schemas/UUID' }
+        companyName: { type: string }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        timezone: { type: string }
+        locale: { type: string, enum: [zh-TW, en] }
+        model: { type: string }
+        workflow:
+          type: array
+          items: { type: string }
+        metrics:
+          type: object
+          properties:
+            requiredHeadcount: { type: integer }
+            assignedHeadcount: { type: integer }
+            unfilledHeadcount: { type: integer }
+            coverageRate: { type: number }
+            openSwapRequestCount: { type: integer }
+            averageHours: { type: number }
+            workloadSpreadHours: { type: number }
+            employeesAtRisk: { type: integer }
+            availabilityConflicts: { type: integer }
+            employees:
+              type: array
+              items: { $ref: '#/components/schemas/ScheduleInsightEmployee' }
+        aiUsage:
+          type: object
+          required: [used, limit, remaining, resetAt]
+          properties:
+            used: { type: integer, minimum: 0 }
+            limit: { type: integer, minimum: 0 }
+            remaining: { type: integer, minimum: 0 }
+            resetAt: { type: string, format: date-time }
+        summary: { type: string }
+        generatedAt: { type: string, format: date-time }
     CreateShiftRequirementBody:
       type: object
       required: [companyId, employeeRole, startAt, endAt, requiredCount]
@@ -575,3 +677,14 @@ components:
         setNull:
           type: object
           additionalProperties: { type: boolean }
+    GenerateScheduleInsightsBody:
+      type: object
+      required: [startAt, endAt]
+      properties:
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        locale: { type: string, enum: [zh-TW, en], default: zh-TW }
+        focus:
+          type: string
+          maxLength: 500
+          example: Prioritize understaffing and employee fatigue risks.

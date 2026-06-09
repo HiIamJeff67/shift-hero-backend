@@ -1,8 +1,8 @@
 package exceptions
 
 import (
-	"net/http"
 	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
+	"net/http"
 )
 
 const (
@@ -47,6 +47,18 @@ func (d *UserAccountExceptionDomain) GoogleCredentialHasAlreadyBeenBinded() *Exc
 		Reason:         "GoogleCredentialIsAlreadyBinded",
 		IsInternal:     false,
 		Message:        "The current account has already been binded with google",
+		HTTPStatusCode: http.StatusInternalServerError,
+		LastTrace:      traces.GetTrace(1),
+	}
+}
+
+func (d *UserAccountExceptionDomain) FailedToGetAIUsageQuota() *Exception {
+	return &Exception{
+		Code:           d.BaseCode + 2,
+		Prefix:         d.Prefix,
+		Reason:         "FailedToGetAIUsageQuota",
+		IsInternal:     true,
+		Message:        "Failed to get the user AI usage quota",
 		HTTPStatusCode: http.StatusInternalServerError,
 		LastTrace:      traces.GetTrace(1),
 	}

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -30,14 +31,23 @@ type SchedulingControllerInterface interface {
 	UpsertSchedulePublication(ctx *gin.Context, reqDto *dtos.UpsertSchedulePublicationReqDto)
 	GetCompanySettings(ctx *gin.Context, reqDto *dtos.GetCompanySettingsReqDto)
 	UpdateCompanySettings(ctx *gin.Context, reqDto *dtos.UpdateCompanySettingsReqDto)
+	GenerateScheduleInsights(ctx *gin.Context, reqDto *dtos.GenerateScheduleInsightsReqDto)
+	StreamScheduleInsights(ctx *gin.Context, reqDto *dtos.GenerateScheduleInsightsReqDto)
 }
 
 type SchedulingController struct {
-	schedulingService services.SchedulingServiceInterface
+	schedulingService        services.SchedulingServiceInterface
+	schedulingInsightService services.SchedulingInsightServiceInterface
 }
 
-func NewSchedulingController(service services.SchedulingServiceInterface) SchedulingControllerInterface {
-	return &SchedulingController{schedulingService: service}
+func NewSchedulingController(
+	service services.SchedulingServiceInterface,
+	insightService services.SchedulingInsightServiceInterface,
+) SchedulingControllerInterface {
+	return &SchedulingController{
+		schedulingService:        service,
+		schedulingInsightService: insightService,
+	}
 }
 
 func (c *SchedulingController) CreateShiftRequirement(ctx *gin.Context, reqDto *dtos.CreateShiftRequirementReqDto) {
@@ -218,4 +228,60 @@ func (c *SchedulingController) UpdateCompanySettings(ctx *gin.Context, reqDto *d
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"success": true, "data": resDto, "exception": nil})
+}
+
+func (c *SchedulingController) GenerateScheduleInsights(
+	ctx *gin.Context,
+	reqDto *dtos.GenerateScheduleInsightsReqDto,
+) {
+	resDto, exception := c.schedulingInsightService.GenerateScheduleInsights(
+		ctx.Request.Context(),
+		reqDto,
+		nil,
+	)
+	if exception != nil {
+		exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"success": true, "data": resDto, "exception": nil})
+}
+
+func (c *SchedulingController) StreamScheduleInsights(
+	ctx *gin.Context,
+	reqDto *dtos.GenerateScheduleInsightsReqDto,
+) {
+	ctx.Header("Content-Type", "text/event-stream")
+	ctx.Header("Cache-Control", "no-cache")
+	ctx.Header("Connection", "keep-alive")
+	ctx.Header("X-Accel-Buffering", "no")
+	ctx.Status(http.StatusOK)
+
+	sendScheduleInsightEvent(ctx, "stage", gin.H{
+		"name":    "deterministic_schedule_analyzer",
+		"message": "Collecting schedule facts and calculating workforce metrics",
+	})
+
+	resDto, exception := c.schedulingInsightService.GenerateScheduleInsights(
+		ctx.Request.Context(),
+		reqDto,
+		func(streamCtx context.Context, chunk []byte) error {
+			if err := streamCtx.Err(); err != nil {
+				return err
+			}
+			sendScheduleInsightEvent(ctx, "token", string(chunk))
+			return nil
+		},
+	)
+	if exception != nil {
+		exception.Log()
+		sendScheduleInsightEvent(ctx, "error", exception.GetGinH())
+		return
+	}
+
+	sendScheduleInsightEvent(ctx, "done", resDto)
+}
+
+func sendScheduleInsightEvent(ctx *gin.Context, event string, data any) {
+	ctx.SSEvent(event, data)
+	ctx.Writer.Flush()
 }

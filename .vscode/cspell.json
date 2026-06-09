@@ -30,6 +30,8 @@
     "omitnil",
     "otelcol",
     "mutatable",
-    "accessable"
+    "accessable",
+    "llm",
+    "llms"
   ]
 }

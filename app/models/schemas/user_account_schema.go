@@ -12,17 +12,19 @@ import (
 )
 
 type UserAccount struct {
-	Id                 uuid.UUID          `json:"id" gorm:"column:id; type:uuid; primaryKey; not null; default:gen_random_uuid();"`
-	UserId             uuid.UUID          `json:"userId" gorm:"column:user_id; type:uuid; not null; unique;"`
-	AuthCode           string             `json:"authCode" gorm:"column:auth_code; not null;"`                     // validate:"required,isnumberstring,len=6"
-	AuthCodeExpiredAt  time.Time          `json:"authCodeExpiredAt" gorm:"column:auth_code_expired_at; not null;"` // the exact time when authCode expires
-	BlockAuthCodeUntil time.Time          `json:"blockAuthCodeUntil" gorm:"column:block_auth_code_until; type:timestamptz; not null;"`
-	CountryCode        *enums.CountryCode `json:"countryCode" gorm:"column:country_code; type:\"CountryCode\";"` // validate:"omitnil,iscountrycode"
-	BackupEmail        *string            `json:"backupEmail" gorm:"column:backup_email; unique;"`               // validate:"omitnil,email"
-	PhoneNumber        *string            `json:"phoneNumber" gorm:"column:phone_number; unique;"`               // validate:"omitnil,max=0,max=15,isnumberstring"
-	GoogleCredential   *string            `json:"googleCredential" gorm:"column:google_credential; unique;"`     // validate:"omitnil"
-	DiscordCredential  *string            `json:"discordCredential" gorm:"column:discord_credential; unique;"`   // validate:"omitnil"
-	UpdatedAt          time.Time          `json:"updatedAt" gorm:"column:updated_at; type:timestamptz; not null; autoUpdateTime:true;"`
+	Id                  uuid.UUID          `json:"id" gorm:"column:id; type:uuid; primaryKey; not null; default:gen_random_uuid();"`
+	UserId              uuid.UUID          `json:"userId" gorm:"column:user_id; type:uuid; not null; unique;"`
+	AuthCode            string             `json:"authCode" gorm:"column:auth_code; not null;"`                     // validate:"required,isnumberstring,len=6"
+	AuthCodeExpiredAt   time.Time          `json:"authCodeExpiredAt" gorm:"column:auth_code_expired_at; not null;"` // the exact time when authCode expires
+	BlockAuthCodeUntil  time.Time          `json:"blockAuthCodeUntil" gorm:"column:block_auth_code_until; type:timestamptz; not null;"`
+	CountryCode         *enums.CountryCode `json:"countryCode" gorm:"column:country_code; type:\"CountryCode\";"` // validate:"omitnil,iscountrycode"
+	BackupEmail         *string            `json:"backupEmail" gorm:"column:backup_email; unique;"`               // validate:"omitnil,email"
+	PhoneNumber         *string            `json:"phoneNumber" gorm:"column:phone_number; unique;"`               // validate:"omitnil,max=0,max=15,isnumberstring"
+	GoogleCredential    *string            `json:"googleCredential" gorm:"column:google_credential; unique;"`     // validate:"omitnil"
+	DiscordCredential   *string            `json:"discordCredential" gorm:"column:discord_credential; unique;"`   // validate:"omitnil"
+	AIMonthlyUsageCount int32              `json:"aiMonthlyUsageCount" gorm:"column:ai_monthly_usage_count; type:integer; not null; default:0;"`
+	AIUsagePeriodStart  time.Time          `json:"aiUsagePeriodStart" gorm:"column:ai_usage_period_start; type:timestamptz; not null; default:CURRENT_TIMESTAMP;"`
+	UpdatedAt           time.Time          `json:"updatedAt" gorm:"column:updated_at; type:timestamptz; not null; autoUpdateTime:true;"`
 }
 
 // UserAccount Table Name

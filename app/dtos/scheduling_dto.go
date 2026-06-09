@@ -328,6 +328,24 @@ type UpdateCompanySettingsReqDto struct {
 	]
 }
 
+type GenerateScheduleInsightsReqDto struct {
+	Request[
+		any,
+		struct {
+			UserId uuid.UUID
+		},
+		struct {
+			StartAt time.Time `json:"startAt" validate:"required"`
+			EndAt   time.Time `json:"endAt" validate:"required"`
+			Locale  string    `json:"locale" validate:"omitempty,oneof=zh-TW en"`
+			Focus   string    `json:"focus" validate:"omitempty,max=500"`
+		},
+		struct {
+			CompanyId uuid.UUID `uri:"companyId" validate:"required,uuid4"`
+		},
+	]
+}
+
 /* ============================== Scheduling Response DTO ============================== */
 
 type ShiftRequirementResDto struct {
@@ -395,4 +413,57 @@ type CompanySettingsResDto struct {
 	Timezone         string    `json:"timezone"`
 	UpdatedAt        time.Time `json:"updatedAt"`
 	CreatedAt        time.Time `json:"createdAt"`
+}
+
+type ScheduleInsightEmployeeResDto struct {
+	UserId                 uuid.UUID          `json:"userId"`
+	DisplayName            string             `json:"displayName"`
+	EmployeeRole           enums.EmployeeRole `json:"employeeRole"`
+	ShiftCount             int                `json:"shiftCount"`
+	TotalHours             float64            `json:"totalHours"`
+	LongestShiftHours      float64            `json:"longestShiftHours"`
+	NightShiftCount        int                `json:"nightShiftCount"`
+	WeekendShiftCount      int                `json:"weekendShiftCount"`
+	ShortRestCount         int                `json:"shortRestCount"`
+	AvailabilityConflicts  int                `json:"availabilityConflicts"`
+	OpenSwapRequestCount   int                `json:"openSwapRequestCount"`
+	MaxConsecutiveWorkDays int                `json:"maxConsecutiveWorkDays"`
+	OvertimeWeekCount      int                `json:"overtimeWeekCount"`
+	RiskScore              int                `json:"riskScore"`
+	RiskLevel              string             `json:"riskLevel"`
+}
+
+type ScheduleInsightMetricsResDto struct {
+	RequiredHeadcount     int64                           `json:"requiredHeadcount"`
+	AssignedHeadcount     int64                           `json:"assignedHeadcount"`
+	UnfilledHeadcount     int64                           `json:"unfilledHeadcount"`
+	CoverageRate          float64                         `json:"coverageRate"`
+	OpenSwapRequestCount  int64                           `json:"openSwapRequestCount"`
+	AverageHours          float64                         `json:"averageHours"`
+	WorkloadSpreadHours   float64                         `json:"workloadSpreadHours"`
+	EmployeesAtRisk       int                             `json:"employeesAtRisk"`
+	AvailabilityConflicts int                             `json:"availabilityConflicts"`
+	Employees             []ScheduleInsightEmployeeResDto `json:"employees"`
+}
+
+type ScheduleInsightAIUsageResDto struct {
+	Used      int32     `json:"used"`
+	Limit     int32     `json:"limit"`
+	Remaining int32     `json:"remaining"`
+	ResetAt   time.Time `json:"resetAt"`
+}
+
+type ScheduleInsightResDto struct {
+	CompanyId   uuid.UUID                    `json:"companyId"`
+	CompanyName string                       `json:"companyName"`
+	StartAt     time.Time                    `json:"startAt"`
+	EndAt       time.Time                    `json:"endAt"`
+	Timezone    string                       `json:"timezone"`
+	Locale      string                       `json:"locale"`
+	Model       string                       `json:"model"`
+	Workflow    []string                     `json:"workflow"`
+	Metrics     ScheduleInsightMetricsResDto `json:"metrics"`
+	AIUsage     ScheduleInsightAIUsageResDto `json:"aiUsage"`
+	Summary     string                       `json:"summary"`
+	GeneratedAt time.Time                    `json:"generatedAt"`
 }

@@ -2,6 +2,7 @@ package exceptions
 
 import (
 	"net/http"
+	"time"
 
 	traces "github.com/HiIamJeff67/shift-hero-backend/app/monitor/traces"
 )
@@ -88,5 +89,59 @@ func (d *SchedulingExceptionDomain) BadRequest(message string) *Exception {
 		Message:        message,
 		HTTPStatusCode: http.StatusBadRequest,
 		LastTrace:      traces.GetTrace(1),
+	}
+}
+
+func (d *SchedulingExceptionDomain) AIUnavailable() *Exception {
+	return &Exception{
+		Code:           d.BaseCode + 5,
+		Prefix:         d.Prefix,
+		Reason:         "AIUnavailable",
+		IsInternal:     false,
+		Message:        "The AI schedule analyst is temporarily unavailable",
+		HTTPStatusCode: http.StatusServiceUnavailable,
+		LastTrace:      traces.GetTrace(1),
+	}
+}
+
+func (d *SchedulingExceptionDomain) AIGenerationFailed() *Exception {
+	return &Exception{
+		Code:           d.BaseCode + 6,
+		Prefix:         d.Prefix,
+		Reason:         "AIGenerationFailed",
+		IsInternal:     false,
+		Message:        "Failed to generate schedule insights",
+		HTTPStatusCode: http.StatusBadGateway,
+		LastTrace:      traces.GetTrace(1),
+	}
+}
+
+func (d *SchedulingExceptionDomain) InsightRangeTooLarge() *Exception {
+	return &Exception{
+		Code:           d.BaseCode + 7,
+		Prefix:         d.Prefix,
+		Reason:         "InsightRangeTooLarge",
+		IsInternal:     false,
+		Message:        "Schedule insight date range cannot exceed 31 days",
+		HTTPStatusCode: http.StatusBadRequest,
+		LastTrace:      traces.GetTrace(1),
+	}
+}
+
+func (d *SchedulingExceptionDomain) AIUsageLimitExceeded(used int32, limit int32, resetAt time.Time) *Exception {
+	return &Exception{
+		Code:           d.BaseCode + 8,
+		Prefix:         d.Prefix,
+		Reason:         "AIUsageLimitExceeded",
+		IsInternal:     false,
+		Message:        "The monthly AI generation limit has been reached",
+		HTTPStatusCode: http.StatusTooManyRequests,
+		Details: map[string]any{
+			"used":      used,
+			"limit":     limit,
+			"remaining": 0,
+			"resetAt":   resetAt,
+		},
+		LastTrace: traces.GetTrace(1),
 	}
 }

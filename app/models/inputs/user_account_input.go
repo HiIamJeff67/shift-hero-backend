@@ -28,3 +28,8 @@ type UpdateUserAccountInput struct {
 }
 
 type PartialUpdateUserAccountInput = PartialUpdateInput[UpdateUserAccountInput]
+
+type UpdateUserAIUsageInput struct {
+	AIMonthlyUsageCount int32     `gorm:"column:ai_monthly_usage_count"`
+	AIUsagePeriodStart  time.Time `gorm:"column:ai_usage_period_start"`
+}

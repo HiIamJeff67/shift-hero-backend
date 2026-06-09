@@ -13,6 +13,7 @@ assignments: Backend generates or Manager replaces assigned shifts.
 swap requests: Staff requests shift swaps; coworkers claim; Manager approves.
 schedule publications: Manager publishes or returns a company week to Draft.
 schedule settings: Company-level scheduling rules such as max weekly hours and rest hours.
+AI schedule insights: Manager-only deterministic workforce metrics plus an LLM-generated briefing.
 ```
 
 Android local SQLite should only handle application-local settings such as API URL, theme, and other UI preferences. It must not store employees, shift requirements, availability, assignments, swap requests, company join requests, or schedule publication state as source of truth.
@@ -265,6 +266,19 @@ Purpose:
 Company-level schedule rules are remote business settings. They should not be stored as Android SQLite source of truth.
 ```
 
+### AI Schedule Insights
+
+```http
+POST /companies/{companyId}/ai/scheduleInsights
+POST /companies/{companyId}/ai/scheduleInsights/stream
+```
+
+Purpose:
+
+```text
+Managers receive deterministic coverage, workload, fatigue, availability, and swap metrics plus an AI-written briefing. The stream endpoint emits only the final narrative tokens. A successful generation consumes one plan-based monthly AI usage unit and returns `aiUsage`; exhausted quotas return `AIUsageLimitExceeded`.
+```
+
 ## Minimum Required For Android Frontend
 
 The Android app needs this complete backend-owned scheduling surface:
@@ -294,6 +308,9 @@ PUT /companies/schedulePublications
 
 GET /companies/{companyId}/scheduleSettings
 PATCH /companies/scheduleSettings
+
+POST /companies/{companyId}/ai/scheduleInsights
+POST /companies/{companyId}/ai/scheduleInsights/stream
 ```
 
 ## Android Integration Plan

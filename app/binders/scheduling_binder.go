@@ -31,6 +31,7 @@ type SchedulingBinderInterface interface {
 	BindUpsertSchedulePublication(controllerFunc types.ControllerFunc[*dtos.UpsertSchedulePublicationReqDto]) gin.HandlerFunc
 	BindGetCompanySettings(controllerFunc types.ControllerFunc[*dtos.GetCompanySettingsReqDto]) gin.HandlerFunc
 	BindUpdateCompanySettings(controllerFunc types.ControllerFunc[*dtos.UpdateCompanySettingsReqDto]) gin.HandlerFunc
+	BindGenerateScheduleInsights(controllerFunc types.ControllerFunc[*dtos.GenerateScheduleInsightsReqDto]) gin.HandlerFunc
 }
 
 type SchedulingBinder struct{}
@@ -420,6 +421,33 @@ func (b *SchedulingBinder) BindUpdateCompanySettings(controllerFunc types.Contro
 			return
 		}
 		reqDto.ContextFields.UserId = uid
+		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
+			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		controllerFunc(ctx, &reqDto)
+	}
+}
+
+func (b *SchedulingBinder) BindGenerateScheduleInsights(
+	controllerFunc types.ControllerFunc[*dtos.GenerateScheduleInsightsReqDto],
+) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var reqDto dtos.GenerateScheduleInsightsReqDto
+		uid, exception := extractUserId(ctx)
+		if exception != nil {
+			exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		reqDto.ContextFields.UserId = uid
+
+		companyId, exception := parseCompanyIdFromPathForSchedulingBinder(ctx)
+		if exception != nil {
+			exception.Log().SafelyAbortAndResponseWithJSON(ctx)
+			return
+		}
+		reqDto.Param.CompanyId = companyId
+
 		if err := ctx.ShouldBindJSON(&reqDto.Body); err != nil {
 			exceptions.Scheduling.InvalidDto().WithOrigin(err).Log().SafelyAbortAndResponseWithJSON(ctx)
 			return
