@@ -779,31 +779,69 @@ func (s *SchedulingService) ClaimSwapRequest(
 		return nil, exception
 	}
 
+	tx := db.Begin()
+	if tx.Error != nil {
+		return nil, exceptions.Scheduling.FailedToCommitTransaction().WithOrigin(tx.Error)
+	}
+
 	swap := schemas.SwapRequest{}
-	if err := db.Model(&schemas.SwapRequest{}).
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Model(&schemas.SwapRequest{}).
 		Where("id = ? AND company_id = ?", reqDto.Body.SwapRequestId, reqDto.Body.CompanyId).
 		First(&swap).Error; err != nil {
+		tx.Rollback()
 		return nil, exceptions.Scheduling.NotFound().WithOrigin(err)
 	}
 	if swap.Status != enums.SwapRequestStatus_Open {
+		tx.Rollback()
 		return nil, exceptions.Scheduling.InvalidSwapState("Only open swap requests can be claimed")
 	}
 	if swap.RequesterUserId == reqDto.ContextFields.UserId {
+		tx.Rollback()
 		return nil, exceptions.Scheduling.Forbidden("Requester cannot claim own swap")
 	}
 
 	swap.Status = enums.SwapRequestStatus_Claimed
 	swap.ClaimedByUserId = &reqDto.ContextFields.UserId
-	if err := db.Model(&schemas.SwapRequest{}).
+
+	settings := schemas.CompanySettings{}
+	autoApprove := false
+	if err := tx.Model(&schemas.CompanySettings{}).
+		Where("company_id = ?", reqDto.Body.CompanyId).
+		First(&settings).Error; err == nil {
+		autoApprove = settings.AutoApproveSwaps
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		tx.Rollback()
+		return nil, exceptions.Scheduling.FailedToUpdate().WithOrigin(err)
+	}
+
+	if autoApprove {
+		if err := tx.Table(schemas.ShiftAssignment{}.TableName()).
+			Where("id = ? AND company_id = ?", swap.ShiftAssignmentId, reqDto.Body.CompanyId).
+			Updates(map[string]any{"user_id": reqDto.ContextFields.UserId}).Error; err != nil {
+			tx.Rollback()
+			return nil, exceptions.Scheduling.FailedToUpdate().WithOrigin(err)
+		}
+		swap.Status = enums.SwapRequestStatus_Approved
+	}
+
+	if err := tx.Model(&schemas.SwapRequest{}).
 		Where("id = ?", swap.Id).
 		Updates(map[string]any{"status": swap.Status, "claimed_by_user_id": swap.ClaimedByUserId}).Error; err != nil {
+		tx.Rollback()
 		return nil, exceptions.Scheduling.FailedToUpdate().WithOrigin(err)
+	}
+	if err := tx.Commit().Error; err != nil {
+		return nil, exceptions.Scheduling.FailedToCommitTransaction().WithOrigin(err)
 	}
 	if err := db.Model(&schemas.SwapRequest{}).Where("id = ?", swap.Id).First(&swap).Error; err != nil {
 		return nil, exceptions.Scheduling.NotFound().WithOrigin(err)
 	}
 
-	s.sendSwapClaimedEmail(db, swap)
+	if swap.Status == enums.SwapRequestStatus_Approved {
+		s.sendSwapApprovedEmail(db, swap)
+	} else {
+		s.sendSwapClaimedEmail(db, swap)
+	}
 
 	res := dtos.SwapRequestResDto{
 		Id:                swap.Id,
